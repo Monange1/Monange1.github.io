@@ -33,7 +33,7 @@
     function available() {
       if (started) return;
       status.textContent = 'Starting GoldHEN automatically…';
-      setTimeout(startGoldHEN, 200);
+      setTimeout(startGoldHEN, 50);
     }
     async function startGoldHEN() {
       if (started) return;
@@ -54,28 +54,26 @@
     }
     if (!/PlayStation 4 9\.00/.test(navigator.userAgent)) {
       status.textContent = 'This host supports PS4 firmware 9.00.';
-    } else if (!cache) {
-      status.textContent = 'Starting online…';
-      startGoldHEN();
     } else {
-      status.textContent = 'Caching offline files…';
+      // Never make startup depend on Application Cache events. The PS4 9.00
+      // browser can leave a cache update in CHECKING/DOWNLOADING indefinitely.
+      // GoldHEN starts at once; Application Cache updates independently.
+      available();
+      if (!cache) {
+        status.textContent = 'Starting GoldHEN automatically…';
+      } else {
       cache.addEventListener('progress', function (event) {
-        if (!started && event.lengthComputable) status.textContent = 'Caching offline files: ' + Math.round(event.loaded * 100 / event.total) + '%';
+        if (!started && event.lengthComputable) status.textContent = 'Starting GoldHEN automatically…';
       });
-      cache.addEventListener('cached', available);
-      cache.addEventListener('noupdate', function () {
-        if (cache.status !== cache.UNCACHED && cache.status !== cache.OBSOLETE) available();
-      });
+      cache.addEventListener('cached', function () {});
+      cache.addEventListener('noupdate', function () {});
       cache.addEventListener('updateready', function () {
-        status.textContent = 'Cache updated. Restarting…';
         try { cache.swapCache(); } catch (_) {}
-        location.reload();
       });
       cache.addEventListener('error', function () {
-        status.textContent = 'Offline cache failed. Starting online…';
-        startGoldHEN();
+        if (!started) available();
       });
-      if (cache.status === cache.IDLE) available();
+      }
     }
   </script>
 </body>

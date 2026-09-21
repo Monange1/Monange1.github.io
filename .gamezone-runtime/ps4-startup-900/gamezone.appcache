@@ -1,32 +1,13 @@
 CACHE MANIFEST
-# GoldHEN 9.00 starter refresh 2026-09-21-v3
+# GoldHEN 9.00 starter refresh 2026-09-21-v4
 
-about.html
 alert.mjs
-cache.html
 config.mjs
-COPYING
-icon0.jpg
 index.html
 lapse.mjs
-LICENSE
 logo.png
 payload.bin
-payload.js
 psfree.mjs
-README.md
-send.mjs
-fonts/FONTS.LICENSE
-fonts/LiberationMono-Regular.ttf
-fonts/README.txt
-kpatch/900.c
-kpatch/900.d
-kpatch/900.elf
-kpatch/900.o
-kpatch/Makefile
-kpatch/script.ld
-kpatch/types.h
-kpatch/utils.h
 module/chain.mjs
 module/constants.mjs
 module/int64.mjs
@@ -38,3 +19,6 @@ module/utils.mjs
 module/view.mjs
 rop/900.mjs
 start.html
+
+NETWORK:
+*

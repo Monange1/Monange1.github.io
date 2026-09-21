@@ -12,9 +12,9 @@
     .logo { width:150px; height:150px; object-fit:contain; margin:0 auto 14px; display:block; }
     h1 { margin:0 0 22px; font-size:36px; font-weight:normal; text-shadow:0 2px 3px #000; }
     #status { min-height:38px; margin:0 auto 24px; color:#e6efff; font-size:21px; }
-    button { min-width:280px; padding:16px 42px; border:2px solid #92d5ff; border-radius:7px; color:white; font-size:27px; background:linear-gradient(#2988d7,#0d4d98); box-shadow:inset 0 1px #ffffff88,0 3px 7px #0007; }
-    button:disabled { color:#b9c9da; border-color:#7b8b9b; background:#3d4b5e; }
+    .spinner { width:44px; height:44px; margin:20px auto; border:4px solid #ffffff33; border-top-color:#92d5ff; border-radius:50%; animation:spin .8s linear infinite; }
     #console { max-width:760px; max-height:100px; overflow:hidden; margin:30px auto 0; color:#d7e7ff; font:14px monospace; text-align:left; white-space:pre-wrap; }
+    @keyframes spin { to { transform:rotate(360deg); } }
   </style>
 </head>
 <body>
@@ -22,51 +22,22 @@
     <img class="logo" src="logo.png" alt="">
     <h1>GoldHEN v2.4b18.10</h1>
     <p id="status">Enable JavaScript in Browser Settings, then reload this page.</p>
-    <button id="start" disabled>GoldHEN</button>
+    <div class="spinner" aria-hidden="true"></div>
     <pre id="console"></pre>
   </main>
   <script type="module">
     const status = document.getElementById('status');
-    const button = document.getElementById('start');
     const consoleOut = document.getElementById('console');
     const cache = window.applicationCache;
     let started = false;
-    let ready = false;
     function available() {
       if (started) return;
-      ready = true;
-      status.textContent = 'GoldHEN is ready.';
-      button.disabled = false;
+      status.textContent = 'Starting GoldHEN automatically…';
+      setTimeout(startGoldHEN, 200);
     }
-    if (!/PlayStation 4 9\.00/.test(navigator.userAgent)) {
-      status.textContent = 'This host supports PS4 firmware 9.00.';
-    } else if (!cache) {
-      status.textContent = 'Offline cache is unavailable.';
-    } else {
-      status.textContent = 'Caching offline files…';
-      cache.addEventListener('progress', function (event) {
-        if (!started && event.lengthComputable) status.textContent = 'Caching offline files: ' + Math.round(event.loaded * 100 / event.total) + '%';
-      });
-      cache.addEventListener('cached', available);
-      cache.addEventListener('noupdate', function () {
-        if (cache.status !== cache.UNCACHED && cache.status !== cache.OBSOLETE) available();
-      });
-      cache.addEventListener('updateready', function () {
-        ready = false;
-        button.disabled = true;
-        status.textContent = 'Cache updated. Reload this page.';
-      });
-      cache.addEventListener('error', function () {
-        ready = false;
-        button.disabled = true;
-        status.textContent = 'Caching failed. Keep this page open and reload.';
-      });
-      if (cache.status === cache.IDLE) available();
-    }
-    button.onclick = async function () {
-      if (!ready || started) return;
+    async function startGoldHEN() {
+      if (started) return;
       started = true;
-      button.disabled = true;
       status.textContent = 'Loading GoldHEN…';
       try {
         const response = await fetch('payload.bin');
@@ -77,10 +48,35 @@
         await import('./alert.mjs');
       } catch (error) {
         consoleOut.textContent = String(error.message || error);
-        status.textContent = 'Error. Reload this page before trying again.';
+        status.textContent = 'Start failed. Reload this page to retry.';
         started = false;
       }
-    };
+    }
+    if (!/PlayStation 4 9\.00/.test(navigator.userAgent)) {
+      status.textContent = 'This host supports PS4 firmware 9.00.';
+    } else if (!cache) {
+      status.textContent = 'Starting online…';
+      startGoldHEN();
+    } else {
+      status.textContent = 'Caching offline files…';
+      cache.addEventListener('progress', function (event) {
+        if (!started && event.lengthComputable) status.textContent = 'Caching offline files: ' + Math.round(event.loaded * 100 / event.total) + '%';
+      });
+      cache.addEventListener('cached', available);
+      cache.addEventListener('noupdate', function () {
+        if (cache.status !== cache.UNCACHED && cache.status !== cache.OBSOLETE) available();
+      });
+      cache.addEventListener('updateready', function () {
+        status.textContent = 'Cache updated. Restarting…';
+        try { cache.swapCache(); } catch (_) {}
+        location.reload();
+      });
+      cache.addEventListener('error', function () {
+        status.textContent = 'Offline cache failed. Starting online…';
+        startGoldHEN();
+      });
+      if (cache.status === cache.IDLE) available();
+    }
   </script>
 </body>
 </html>

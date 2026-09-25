@@ -21,7 +21,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>PSFree - Lapse Exploit for 9.00</title>
+  <title>GameZone GoldHEN for PS4 9.00</title>
   <style>
     * {
       box-sizing: border-box;
@@ -64,6 +64,28 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
       margin-bottom: 20px;
     }
 
+    #status {
+      min-height: 34px;
+      margin-bottom: 20px;
+      color: #dceaff;
+      font-size: 19px;
+    }
+
+    button {
+      width: 100%;
+      min-height: 62px;
+      border: 2px solid #7ddcff;
+      border-radius: 10px;
+      background: #143f72;
+      color: white;
+      font-size: 22px;
+      font-weight: bold;
+    }
+
+    button:disabled {
+      opacity: .55;
+    }
+
     #console {
       font-family: 'logging', monospace;
       font-size: 18px;
@@ -72,24 +94,47 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
       padding: 20px;
       border-radius: 10px;
       white-space: pre-wrap;
-      height: 300px;
+      min-height: 54px;
+      max-height: 120px;
       overflow-y: auto;
     }
   </style>
 </head>
 <body>
-  <script>
-    if (window.applicationCache.status === 0) {
-      window.location.replace("cache.html");
-    }
-  </script>
-
   <div class="card">
-    <h1>PSFree - Lapse Exploit for Firmware 9.00</h1>
+    <h1>GameZone GoldHEN — Firmware 9.00</h1>
+    <p id="status">Ready. GoldHEN will start only when you press the button.</p>
+    <button id="start" type="button">Start GoldHEN</button>
     <pre id="console"></pre>
   </div>
 
-  <script src="payload.js"></script>
-  <script type="module" src="./alert.mjs"></script>
+  <script type="module">
+    const button = document.getElementById('start');
+    const status = document.getElementById('status');
+    const consoleOut = document.getElementById('console');
+    let started = false;
+
+    button.addEventListener('click', async function () {
+      if (started) return;
+      started = true;
+      button.disabled = true;
+      status.textContent = 'Loading the verified GoldHEN payload…';
+      consoleOut.textContent = '';
+      try {
+        const response = await fetch('./payload.bin');
+        if (!response.ok) throw new Error('Payload download failed: HTTP ' + response.status);
+        const binary = await response.arrayBuffer();
+        if (binary.byteLength !== 290016) throw new Error('Payload verification failed: unexpected size');
+        window.pld = new Uint32Array(binary);
+        status.textContent = 'Starting GoldHEN. Wait for the notification…';
+        await import('./alert.mjs');
+      } catch (error) {
+        consoleOut.textContent = String(error && (error.message || error));
+        status.textContent = 'GoldHEN did not start. Cold-restart the PS4 before another attempt.';
+        // Deliberately do not re-enable the button. Repeated exploit attempts in
+        // one browser session have a higher chance of a kernel panic.
+      }
+    });
+  </script>
 </body>
 </html>

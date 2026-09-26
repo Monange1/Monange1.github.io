@@ -1,0 +1,12 @@
+CACHE MANIFEST
+# GameZone firmware router 2026-09-26-1
+
+CACHE:
+index.html
+logo.png
+
+NETWORK:
+*
+
+FALLBACK:
+index.html index.html

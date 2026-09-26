@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="en" manifest="cache.appcache">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>GameZone GoldHEN — Firmware Lab</title>
+  <style>
+    * { box-sizing:border-box; }
+    html,body { min-height:100%; margin:0; }
+    body { display:flex; align-items:center; justify-content:center; padding:22px; color:#eef7ff; background:radial-gradient(circle at 20% 10%,#153b72 0,#07152f 38%,#050914 78%); font:18px/1.45 Arial,sans-serif; }
+    main { width:820px; max-width:96%; padding:32px; text-align:center; background:rgba(2,7,18,.86); border:1px solid #285b8e; border-radius:20px; box-shadow:0 20px 70px #000a; }
+    img { width:112px; height:112px; object-fit:contain; }
+    h1 { margin:8px 0 10px; font-size:34px; }
+    #firmware { margin:0 0 8px; color:#72dcff; font-weight:bold; }
+    #status { min-height:58px; margin:12px 0 18px; color:#d3e3f5; }
+    #risk { padding:12px 14px; margin:14px 0; border-radius:10px; background:#301f08; color:#ffd98b; font-size:15px; }
+    button { width:100%; min-height:64px; border:2px solid #63d7ff; border-radius:11px; background:#174f89; color:#fff; font-size:21px; font-weight:bold; }
+    button:disabled { opacity:.4; }
+    .meta { margin-top:14px; color:#8095ad; font:12px/1.45 monospace; }
+  </style>
+</head>
+<body>
+  <main>
+    <img src="logo.png" alt="GameZone">
+    <h1>GameZone GoldHEN Firmware Lab</h1>
+    <p id="firmware">Detecting this PS4…</p>
+    <p id="status">Checking the complete offline starter…</p>
+    <p id="risk" hidden></p>
+    <button id="start" type="button" disabled>Start GoldHEN</button>
+    <p class="meta">Manual start · exact-firmware guard · one attempt per page load · no automatic retry</p>
+  </main>
+  <script>
+  (function () {
+    var firmwareEl = document.getElementById('firmware');
+    var statusEl = document.getElementById('status');
+    var riskEl = document.getElementById('risk');
+    var startEl = document.getElementById('start');
+    var cacheReady = false;
+    var acknowledged = false;
+    var started = false;
+    var routes = {
+      '11.00': { chain:'lapse', evidence:'candidate' },
+      '11.50': { chain:'lapse', evidence:'candidate' },
+      '12.00': { chain:'lapse', evidence:'lab' },
+      '12.02': { chain:'lapse', evidence:'lab' },
+      '12.50': { chain:'poops', evidence:'lab' },
+      '12.52': { chain:'poops', evidence:'lab' },
+      '13.00': { chain:'poops', evidence:'candidate' }
+    };
+    startEl.disabled = true;
+
+    function firmware() {
+      var match = /PlayStation 4[\\/ ](\d+)\.(\d+)/.exec(navigator.userAgent);
+      if (!match) return null;
+      return parseInt(match[1],10) + '.' + match[2].slice(0,2).padStart(2,'0');
+    }
+
+    var fw = firmware();
+    var route = fw && routes[fw];
+    firmwareEl.textContent = fw ? 'Detected PS4 firmware ' + fw : 'No supported PS4 firmware detected';
+    if (!route) {
+      startEl.disabled = true;
+      statusEl.textContent = 'STOP: there is no exact GameZone route for this firmware.';
+      return;
+    }
+    if (route.evidence === 'lab') {
+      riskEl.hidden = false;
+      riskEl.textContent = 'Hardware certification is incomplete for this exact firmware. Use only on a test PS4, never on a venue console.';
+      startEl.textContent = 'Acknowledge test-only firmware';
+    } else {
+      riskEl.hidden = false;
+      riskEl.textContent = 'This route is still a GameZone candidate. It is blocked from venue installation until tracker and recovery testing passes.';
+    }
+
+    function ready() {
+      cacheReady = true;
+      startEl.disabled = false;
+      statusEl.textContent = 'Offline ready. GoldHEN will run only after your button press.';
+    }
+
+    startEl.addEventListener('click', function () {
+      if (started || !cacheReady || !route) return;
+      if (route.evidence === 'lab' && !acknowledged) {
+        acknowledged = true;
+        startEl.textContent = 'Start GoldHEN on test PS4';
+        statusEl.textContent = 'Test-only route acknowledged. Press once more to make one launch attempt.';
+        return;
+      }
+      started = true;
+      startEl.disabled = true;
+      statusEl.textContent = 'Starting the ' + route.chain + ' chain once. Wait for the GoldHEN notification…';
+      try {
+        sessionStorage.setItem('gamezone-launch-ticket', JSON.stringify({ firmware:fw, chain:route.chain, issuedAt:Date.now() }));
+      } catch (_) {
+        statusEl.textContent = 'Protected launch storage is unavailable. GoldHEN was not started.';
+        return;
+      }
+      window.location.href = route.chain === 'lapse' ? 'run_lapse.html' : 'run_poops.html';
+    });
+
+    var cache = window.applicationCache;
+    if (!cache) {
+      statusEl.textContent = 'Offline storage is unavailable. GoldHEN was not started.';
+    } else if (!navigator.onLine || cache.status === cache.IDLE) {
+      ready();
+    } else if (cache.status === cache.UPDATEREADY) {
+      try { cache.swapCache(); } catch (_) {}
+      statusEl.textContent = 'Offline update saved. Reload before starting GoldHEN.';
+    } else {
+      statusEl.textContent = 'Saving every required file for offline use…';
+      cache.addEventListener('progress', function (event) {
+        if (event && event.total) statusEl.textContent = 'Saving for offline use: ' + Math.round(event.loaded / event.total * 100) + '%';
+      }, false);
+      cache.addEventListener('cached', ready, false);
+      cache.addEventListener('noupdate', ready, false);
+      cache.addEventListener('updateready', function () {
+        try { cache.swapCache(); } catch (_) {}
+        startEl.disabled = true;
+        statusEl.textContent = 'Offline update saved. Reload before starting GoldHEN.';
+      }, false);
+      cache.addEventListener('error', function () {
+        startEl.disabled = true;
+        statusEl.textContent = 'Offline cache failed. Check the connection and reload; GoldHEN was not started.';
+      }, false);
+    }
+  })();
+  </script>
+</body>
+</html>

@@ -18,7 +18,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 -->
 
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" manifest="gamezone.appcache">
 <head>
   <meta charset="UTF-8">
   <title>GameZone GoldHEN for PS4 9.00</title>
@@ -86,6 +86,13 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
       opacity: .55;
     }
 
+    .secondary {
+      display: block;
+      margin-top: 12px;
+      color: #b8ddff;
+      font-size: 16px;
+    }
+
     #console {
       font-family: 'logging', monospace;
       font-size: 18px;
@@ -103,30 +110,51 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 <body>
   <div class="card">
     <h1>GameZone GoldHEN — Firmware 9.00</h1>
-    <p id="status">Ready. GoldHEN will start only when you press the button.</p>
-    <button id="start" type="button">Start GoldHEN</button>
+    <p id="status">Checking the complete offline starter…</p>
+    <button id="start" type="button" disabled>Start GoldHEN</button>
+    <button id="maintenance" class="secondary" type="button" disabled>Maintenance GoldHEN (no tracker AutoRun)</button>
     <pre id="console"></pre>
   </div>
 
   <script type="module">
     const button = document.getElementById('start');
+    const maintenance = document.getElementById('maintenance');
     const status = document.getElementById('status');
     const consoleOut = document.getElementById('console');
     let started = false;
 
-    button.addEventListener('click', async function () {
+    function exactFirmware() {
+      return /PlayStation 4[\\/ ]9\.00(?:\D|$)/.test(navigator.userAgent);
+    }
+
+    function ready(message) {
+      if (!exactFirmware()) {
+        button.disabled = true;
+        status.textContent = 'STOP: this starter is only for PS4 firmware 9.00.';
+        return;
+      }
+      button.disabled = false;
+      maintenance.disabled = false;
+      status.textContent = message || 'Offline ready. Press Start GoldHEN when you are ready.';
+    }
+
+    async function startGoldHEN(mode) {
       if (started) return;
       started = true;
       button.disabled = true;
-      status.textContent = 'Loading the verified GoldHEN payload…';
+      maintenance.disabled = true;
+      const recovery = mode === 'maintenance';
+      const payloadPath = recovery ? './goldhen-2.4b18-maintenance.bin' : './payload.bin';
+      const payloadSize = recovery ? 260160 : 290016;
+      status.textContent = recovery ? 'Loading maintenance GoldHEN without tracker AutoRun…' : 'Loading the verified GameZone GoldHEN payload…';
       consoleOut.textContent = '';
       try {
-        const response = await fetch('./payload.bin');
+        const response = await fetch(payloadPath);
         if (!response.ok) throw new Error('Payload download failed: HTTP ' + response.status);
         const binary = await response.arrayBuffer();
-        if (binary.byteLength !== 290016) throw new Error('Payload verification failed: unexpected size');
+        if (binary.byteLength !== payloadSize) throw new Error('Payload verification failed: unexpected size');
         window.pld = new Uint32Array(binary);
-        status.textContent = 'Starting GoldHEN. Wait for the notification…';
+        status.textContent = recovery ? 'Starting maintenance GoldHEN. The GameZone tracker will not AutoRun.' : 'Starting GoldHEN. Wait for the notification…';
         await import('./alert.mjs');
       } catch (error) {
         consoleOut.textContent = String(error && (error.message || error));
@@ -134,7 +162,44 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
         // Deliberately do not re-enable the button. Repeated exploit attempts in
         // one browser session have a higher chance of a kernel panic.
       }
-    });
+    }
+
+    button.addEventListener('click', function () { startGoldHEN('managed'); });
+    maintenance.addEventListener('click', function () { startGoldHEN('maintenance'); });
+
+    if (!exactFirmware()) {
+      button.disabled = true;
+      maintenance.disabled = true;
+      status.textContent = 'STOP: this starter is only for PS4 firmware 9.00.';
+    } else {
+      const cache = window.applicationCache;
+      if (!cache) {
+        status.textContent = 'Offline storage is unavailable. Reload with an internet connection.';
+      } else if (!navigator.onLine || cache.status === cache.IDLE) {
+        ready();
+      } else if (cache.status === cache.UPDATEREADY) {
+        try { cache.swapCache(); } catch (_) {}
+        status.textContent = 'Offline update saved. Reload this page before starting GoldHEN.';
+      } else {
+        status.textContent = 'Saving the complete starter for offline use…';
+        cache.addEventListener('progress', function (event) {
+          if (event && event.total) status.textContent = 'Saving for offline use: ' + Math.round(event.loaded / event.total * 100) + '%';
+        }, false);
+        cache.addEventListener('cached', function () { ready('Offline ready. Press Start GoldHEN when you are ready.'); }, false);
+        cache.addEventListener('noupdate', function () { ready(); }, false);
+        cache.addEventListener('updateready', function () {
+          try { cache.swapCache(); } catch (_) {}
+          button.disabled = true;
+          maintenance.disabled = true;
+          status.textContent = 'Offline update saved. Reload this page before starting GoldHEN.';
+        }, false);
+        cache.addEventListener('error', function () {
+          button.disabled = true;
+          maintenance.disabled = true;
+          status.textContent = 'Offline cache failed. Check the connection and reload; GoldHEN was not started.';
+        }, false);
+      }
+    }
   </script>
 </body>
 </html>

@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>GoldHEN v2.4b18.10</title>
+  <title>GameZone GoldHEN safety handoff</title>
   <style>
     * { box-sizing: border-box; }
     html, body { width:100%; min-height:100%; margin:0; overflow:hidden; }
@@ -21,68 +21,19 @@
 <body>
   <main>
     <img class="logo" src="logo.png" alt="">
-    <h1>GoldHEN v2.4b18.10</h1>
-    <p id="status">Enable JavaScript in Browser Settings, then reload this page.</p>
-    <div class="spinner" aria-hidden="true"></div>
+    <h1>GameZone GoldHEN</h1>
+    <p id="status">Opening the protected manual starter…</p>
     <pre id="console"></pre>
   </main>
   <script type="module">
     const status = document.getElementById('status');
-    const consoleOut = document.getElementById('console');
-    const spinner = document.querySelector('.spinner');
     const cache = window.applicationCache;
-    let started = false;
-    function available() {
-      if (started) return;
-      status.textContent = 'Starting GoldHEN automatically…';
-      setTimeout(startGoldHEN, 50);
-    }
-    async function startGoldHEN() {
-      if (started) return;
-      started = true;
-      status.textContent = 'Loading GoldHEN…';
-      try {
-        const response = await fetch('payload.bin');
-        if (!response.ok) throw new Error('Payload download failed: ' + response.status);
-        const binary = await response.arrayBuffer();
-        if (binary.byteLength !== 290016) throw new Error('Unexpected payload size');
-        window.pld = new Uint32Array(binary);
-        await import('./alert.mjs');
-        // PSFree continues asynchronously after its bootstrap module loads and
-        // does not expose a completion callback. Stop the indefinite loading
-        // animation once control has been handed to the exploit chain.
-        setTimeout(function () {
-          status.textContent = 'GoldHEN launched. GameZone Reader will start automatically.';
-          spinner.classList.add('done');
-        }, 8000);
-      } catch (error) {
-        consoleOut.textContent = String(error.message || error);
-        status.textContent = 'Start failed. Reload this page to retry.';
-        started = false;
-      }
-    }
     if (!/PlayStation 4 9\.00/.test(navigator.userAgent)) {
       status.textContent = 'This host supports PS4 firmware 9.00.';
     } else {
-      // Never make startup depend on Application Cache events. The PS4 9.00
-      // browser can leave a cache update in CHECKING/DOWNLOADING indefinitely.
-      // GoldHEN starts at once; Application Cache updates independently.
-      available();
-      if (!cache) {
-        status.textContent = 'Starting GoldHEN automatically…';
-      } else {
-      cache.addEventListener('progress', function (event) {
-        if (!started && event.lengthComputable) status.textContent = 'Starting GoldHEN automatically…';
-      });
-      cache.addEventListener('cached', function () {});
-      cache.addEventListener('noupdate', function () {});
-      cache.addEventListener('updateready', function () {
-        try { cache.swapCache(); } catch (_) {}
-      });
-      cache.addEventListener('error', function () {
-        if (!started) available();
-      });
-      }
+      // This compatibility URL intentionally never executes the exploit. It
+      // only hands the operator to the manual, firmware-checked entry page.
+      setTimeout(function () { window.location.replace('./'); }, 250);
     }
   </script>
 </body>

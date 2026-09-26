@@ -115,9 +115,18 @@ async function doJb() {
 
       kernel_patches(kpatches_u8);
 
-      const bin_rsp = await fetch("src/payload.bin");
+      const payloadPath = window.payloadPath || "src/payload.bin";
+      const bin_rsp = await fetch(payloadPath);
+      if (!bin_rsp.ok) {
+        throw new Error(`Payload download failed: HTTP ${bin_rsp.status}`);
+      }
       const bin_buf = await bin_rsp.arrayBuffer();
       const bin_u8 = new Uint8Array(bin_buf);
+
+      const expectedSize = window.payloadExpectedSize || 290016;
+      if (bin_u8.byteLength !== expectedSize) {
+        throw new Error(`Payload verification failed: expected ${expectedSize} bytes, received ${bin_u8.byteLength}`);
+      }
 
       load_bin(bin_u8);
     }

@@ -1,0 +1,18 @@
+<!doctype html>
+<html lang="en" manifest="cache.appcache">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>GameZone Poops</title>
+<style>html,body{margin:0;background:#07101f;color:#d8e8fa;font:15px Arial,sans-serif}header{text-align:center;padding:12px;border-bottom:1px solid #203b5b}header img{width:38px;height:38px;object-fit:contain;vertical-align:middle}header b{margin-left:9px;font-size:18px}main{padding:18px}#state{font-size:23px;font-weight:bold;margin-bottom:12px}#out{white-space:pre-wrap;font:12px/1.45 monospace;background:#030812;border:1px solid #203b5b;border-radius:8px;padding:12px;height:calc(100vh - 150px);overflow:auto}.bad{color:#ff8f8f}</style></head>
+<body><header><img src="logo.png" alt=""><b>GAMEZONE</b></header><main><div id="state">Checking protected launch…</div><div id="out"></div></main>
+<script>
+(function(){
+  var state=document.getElementById('state');
+  var match=/PlayStation 4[\\/ ](\d+)\.(\d+)/.exec(navigator.userAgent);
+  var fw=match ? parseInt(match[1],10)+'.'+match[2].slice(0,2).padStart(2,'0') : null;
+  var allowed={'12.50':1,'12.52':1,'13.00':1};
+  var ticket=null;
+  try{ticket=JSON.parse(sessionStorage.getItem('gamezone-launch-ticket')||'null');sessionStorage.removeItem('gamezone-launch-ticket');}catch(_){}
+  if(!allowed[fw]||!ticket||ticket.firmware!==fw||ticket.chain!=='poops'||Date.now()-ticket.issuedAt>60000){state.className='bad';state.textContent='BLOCKED: reopen the GameZone starter and press its button.';return;}
+  state.textContent='Starting Poops once. Do not reload during this attempt…';
+  var script=document.createElement('script');script.type='module';script.src='./chain_poops.js';document.body.appendChild(script);
+})();
+</script></body></html>

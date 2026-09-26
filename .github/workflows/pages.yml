@@ -25,12 +25,17 @@ jobs:
         uses: actions/checkout@v4
       - name: Configure Pages
         uses: actions/configure-pages@v5
+      - name: Verify firmware hosts
+        run: |
+          node .github/scripts/validate-ps4-hosts.mjs
+          node .github/scripts/test-ps4-host-safety.mjs
       - name: Assemble firmware-specific hosts
         run: |
-          mkdir -p public/1100 public/1200-test
+          mkdir -p public/1100 public/start public/modern
           cp -a .gamezone-runtime/ps4-startup-900/. public/
           cp -a .gamezone-runtime/ps4-startup-1100/. public/1100/
-          cp -a .gamezone-runtime/ps4-startup-1200-test/. public/1200-test/
+          cp -a .gamezone-runtime/ps4-startup-router/. public/start/
+          cp -a .gamezone-runtime/ps4-startup-modern/. public/modern/
       - name: Upload GameZone PS4 hosts
         uses: actions/upload-pages-artifact@v3
         with:

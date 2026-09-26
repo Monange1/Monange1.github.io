@@ -32,6 +32,7 @@ button {
   background: #164c86; color: #fff; font-size: 21px; font-weight: bold;
 }
 button:disabled { opacity: .45; }
+.secondary { margin-top: 12px; border-color: #7388a8; background: #17263a; font-size: 17px; }
 #console {
   width: 100%; min-height: 88px; max-height: 190px; overflow-y: auto; margin: 0;
   border-radius: 10px; background: rgba(0, 0, 0, .72); color: #86f7b8;

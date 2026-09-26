@@ -1,5 +1,5 @@
 CACHE MANIFEST
-# GoldHEN 9.00 safe manual starter 2026-09-26-v10-gamezone-brand
+# GoldHEN 9.00 safe manual starter 2026-09-26-v11-maintenance
 
 alert.mjs
 config.mjs
@@ -8,6 +8,7 @@ icon0.jpg
 lapse.mjs
 logo.png
 payload.bin
+goldhen-2.4b18-maintenance.bin
 psfree.mjs
 module/chain.mjs
 module/constants.mjs

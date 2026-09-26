@@ -1,5 +1,5 @@
 CACHE MANIFEST
-# GameZone 11.00 build 2026-09-26-2-brand-artwork
+# GameZone 11.00/11.02 build 2026-09-26-3-manual-safe-start
 
 CACHE:
 index.html
@@ -9,6 +9,7 @@ includes/logo.png
 includes/script.js
 includes/style.css
 src/payload.bin
+src/goldhen-2.4b18-maintenance.bin
 src/lapse.js
 src/loader.js
 src/main.js

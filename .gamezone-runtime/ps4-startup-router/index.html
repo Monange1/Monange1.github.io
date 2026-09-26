@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en" manifest="cache.appcache">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>GameZone PS4 Starter</title>
+  <style>
+    *{box-sizing:border-box}html,body{min-height:100%;margin:0}body{display:flex;align-items:center;justify-content:center;padding:24px;color:#f2f7ff;background:radial-gradient(circle at 22% 5%,#17437c,#07152d 43%,#040811 80%);font:19px/1.45 Arial,sans-serif}main{width:760px;max-width:96%;padding:34px;text-align:center;background:#030914e8;border:1px solid #2c6499;border-radius:20px;box-shadow:0 24px 80px #000b}img{width:120px;height:120px;object-fit:contain}h1{margin:8px 0 14px;font-size:35px}#firmware{color:#66e5ff;font-weight:bold}#status{min-height:58px;color:#cedff1}button{width:100%;min-height:64px;border:2px solid #6bdcff;border-radius:11px;background:#17528d;color:#fff;font-size:21px;font-weight:bold}button:disabled{opacity:.4}.note{margin-top:16px;color:#8397ad;font-size:14px}</style>
+</head>
+<body><main>
+  <img src="logo.png" alt="GameZone">
+  <h1>GameZone PS4 Starter</h1>
+  <p id="firmware">Detecting this PS4…</p>
+  <p id="status">Checking the safe firmware route…</p>
+  <button id="open" type="button" disabled>Open protected starter</button>
+  <p class="note">This page never runs an exploit. The next page will still require a manual Start GoldHEN press.</p>
+</main>
+<script>
+(function(){
+  var firmwareEl=document.getElementById('firmware');
+  var statusEl=document.getElementById('status');
+  var openEl=document.getElementById('open');
+  openEl.disabled=true;
+  var match=/PlayStation 4[\\/ ](\d+)\.(\d+)/.exec(navigator.userAgent);
+  var fw=match ? parseInt(match[1],10)+'.'+match[2].slice(0,2).padStart(2,'0') : null;
+  var localHub=location.pathname.indexOf('/ps4-host/start')===0;
+  var routes={
+    '9.00':localHub?'../900/':'../',
+    '11.00':'../1100/',
+    '11.02':'../1100/',
+    '11.50':'../modern/',
+    '12.00':'../modern/',
+    '12.02':'../modern/',
+    '12.50':'../modern/',
+    '12.52':'../modern/',
+    '13.00':'../modern/'
+  };
+  var target=fw&&routes[fw];
+  firmwareEl.textContent=fw?'Detected PS4 firmware '+fw:'No PS4 firmware detected';
+  if(!target){openEl.disabled=true;statusEl.textContent='STOP: no exact GameZone starter is registered for this firmware.';return;}
+  statusEl.textContent=fw==='9.00'?'Certified 9.00 route found.':'Firmware-specific test route found. Venue installation remains blocked until certification.';
+  openEl.disabled=false;
+  openEl.addEventListener('click',function(){openEl.disabled=true;statusEl.textContent='Opening the protected manual starter…';window.location.href=target;});
+})();
+</script></body></html>

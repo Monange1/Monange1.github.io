@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en" manifest="cache.appcache">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GameZone GoldHEN — PS4 11.00</title>
+  <link rel="stylesheet" href="includes/style.css">
+</head>
+<body>
+  <main class="card">
+    <img class="logo" src="includes/logo.png" alt="GameZone">
+    <h1>GameZone GoldHEN — Firmware 11.00</h1>
+    <p id="UA">Checking this console…</p>
+    <p id="status">Preparing the offline starter…</p>
+    <div class="btn-container">
+      <form id="kernel-options" hidden>
+        <input type="radio" name="kernel" id="netctrl-exploit" value="netctrl">
+        <label for="netctrl-exploit">NetCtrl</label>
+        <input type="radio" name="kernel" id="lapse-exploit" value="lapse" checked>
+        <label for="lapse-exploit">Lapse</label>
+      </form>
+      <button id="jeilbrek" type="button">Start GoldHEN now</button>
+      <div class="autoJb" hidden>
+        <label for="autoJbInput" id="autoJbLabel">Automatic startup</label>
+        <input id="autoJbInput" type="checkbox" checked>
+      </div>
+    </div>
+    <pre id="console">The first visit saves this starter for offline use. Later visits start automatically.</pre>
+  </main>
+  <script src="src/main.js"></script>
+  <script src="includes/script.js"></script>
+</body>
+</html>
+

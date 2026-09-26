@@ -1,4 +1,4 @@
-name: Publish PS4 9.00 host
+name: Publish GameZone PS4 hosts
 
 on:
   push:
@@ -25,10 +25,16 @@ jobs:
         uses: actions/checkout@v4
       - name: Configure Pages
         uses: actions/configure-pages@v5
-      - name: Upload approved PS4 host
+      - name: Assemble firmware-specific hosts
+        run: |
+          mkdir -p public/1100 public/1200-test
+          cp -a .gamezone-runtime/ps4-startup-900/. public/
+          cp -a .gamezone-runtime/ps4-startup-1100/. public/1100/
+          cp -a .gamezone-runtime/ps4-startup-1200-test/. public/1200-test/
+      - name: Upload GameZone PS4 hosts
         uses: actions/upload-pages-artifact@v3
         with:
-          path: .gamezone-runtime/ps4-startup-900
+          path: public
       - name: Deploy
         id: deployment
         uses: actions/deploy-pages@v4

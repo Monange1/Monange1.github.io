@@ -1,9 +1,10 @@
 CACHE MANIFEST
-# GameZone 11.00 build 2026-09-26-1
+# GameZone 11.00 build 2026-09-26-2-brand-artwork
 
 CACHE:
 index.html
 includes/cat.jpg
+includes/background.jpg
 includes/logo.png
 includes/script.js
 includes/style.css

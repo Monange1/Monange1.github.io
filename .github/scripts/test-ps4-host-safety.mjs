@@ -90,14 +90,17 @@ assert(env.element('start').disabled === true && env.location.href === '', 'unkn
 
 env = environment('Mozilla/5.0 (PlayStation 4/13.00) AppleWebKit');
 run(inlineScripts('.gamezone-runtime/ps4-startup-router/index.html')[0], env, 'router.js');
-assert(env.location.href === '', 'router navigated without a button press');
-env.element('open').click();
-assert(env.location.href === '../modern/', 'router selected the wrong 13.00 destination');
+assert(env.location.href === '../modern/', 'router did not automatically select the 13.00 starter');
+assert(env.storage.size === 0, 'router created an exploit launch ticket during handoff');
 
 env = environment('Mozilla/5.0 (PlayStation 4/9.00) AppleWebKit', { pathname:'/ps4-host/start/' });
 run(inlineScripts('.gamezone-runtime/ps4-startup-router/index.html')[0], env, 'local-router.js');
-env.element('open').click();
-assert(env.location.href === '../900/', 'local Hub router did not select its mounted 9.00 path');
+assert(env.location.href === '../900/', 'local Hub router did not automatically select its mounted 9.00 starter');
+assert(env.storage.size === 0, 'local router created an exploit launch ticket during handoff');
+
+env = environment('Mozilla/5.0 (PlayStation 4/9.01) AppleWebKit', { pathname:'/ps4-host/start/' });
+run(inlineScripts('.gamezone-runtime/ps4-startup-router/index.html')[0], env, 'unknown-router.js');
+assert(env.location.href === '' && env.element('open').disabled === true, 'unknown firmware did not fail closed in the router');
 
 env = environment('Mozilla/5.0 (PlayStation 4/11.50) AppleWebKit');
 run(inlineScripts('.gamezone-runtime/ps4-startup-modern/run_lapse.html')[0], env, 'lapse-guard.js');

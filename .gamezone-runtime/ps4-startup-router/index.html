@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en" manifest="cache.appcache?v=20260926-1">
+<html lang="en" manifest="cache.appcache?v=20260927-2">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -12,8 +12,8 @@
   <h1>GameZone PS4 Starter</h1>
   <p id="firmware">Detecting this PS4…</p>
   <p id="status">Checking the safe firmware route…</p>
-  <button id="open" type="button" disabled>Open protected starter</button>
-  <p class="note">This page never runs an exploit. The next page will still require a manual Start GoldHEN press.</p>
+  <button id="open" type="button" disabled>Continue to starter</button>
+  <p class="note">Firmware detection only selects the correct starter. GoldHEN still starts only when you press its Start GoldHEN button.</p>
 </main>
 <script>
 (function(){
@@ -38,8 +38,17 @@
   var target=fw&&routes[fw];
   firmwareEl.textContent=fw?'Detected PS4 firmware '+fw:'No PS4 firmware detected';
   if(!target){openEl.disabled=true;statusEl.textContent='STOP: no exact GameZone starter is registered for this firmware.';return;}
-  statusEl.textContent=fw==='9.00'?'Certified 9.00 route found.':'Firmware-specific test route found. Venue installation remains blocked until certification.';
+  var opened=false;
+  function openStarter(){
+    if(opened)return;
+    opened=true;
+    openEl.disabled=true;
+    statusEl.textContent='Opening the '+fw+' starter…';
+    if(window.location.replace)window.location.replace(target);else window.location.href=target;
+  }
+  statusEl.textContent=fw==='9.00'?'Certified 9.00 starter found. Opening it now…':'Firmware-specific test starter found. Opening it now…';
   openEl.disabled=false;
-  openEl.addEventListener('click',function(){openEl.disabled=true;statusEl.textContent='Opening the protected manual starter…';window.location.href=target;});
+  openEl.addEventListener('click',openStarter);
+  window.setTimeout(openStarter,80);
 })();
 </script></body></html>

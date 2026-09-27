@@ -88,18 +88,32 @@ assert(env.location.href === 'run_lapse.html', '12.02 did not launch after two d
 env = modern('11.52');
 assert(env.element('start').disabled === true && env.location.href === '', 'unknown nearby firmware did not fail closed');
 
-env = environment('Mozilla/5.0 (PlayStation 4/13.00) AppleWebKit');
-run(inlineScripts('.gamezone-runtime/ps4-startup-router/index.html')[0], env, 'router.js');
-assert(env.location.href === '../modern/', 'router did not automatically select the 13.00 starter');
-assert(env.storage.size === 0, 'router created an exploit launch ticket during handoff');
+const routerScript = inlineScripts('.gamezone-runtime/ps4-startup-router/index.html')[0];
+const firmwareRoutes = new Map([
+  ['9.00',  ['../', '../900/']],
+  ['11.00', ['../1100/', '../1100/']],
+  ['11.02', ['../1100/', '../1100/']],
+  ['11.50', ['../modern/', '../modern/']],
+  ['12.00', ['../modern/', '../modern/']],
+  ['12.02', ['../modern/', '../modern/']],
+  ['12.50', ['../modern/', '../modern/']],
+  ['12.52', ['../modern/', '../modern/']],
+  ['13.00', ['../modern/', '../modern/']],
+]);
+for (const [firmware, [publicTarget, localTarget]] of firmwareRoutes) {
+  env = environment(`Mozilla/5.0 (PlayStation 4/${firmware}) AppleWebKit`, { pathname:'/start/' });
+  run(routerScript, env, `public-router-${firmware}.js`);
+  assert(env.location.href === publicTarget, `public router selected the wrong ${firmware} starter`);
+  assert(env.storage.size === 0, `public ${firmware} handoff created an exploit launch ticket`);
 
-env = environment('Mozilla/5.0 (PlayStation 4/9.00) AppleWebKit', { pathname:'/ps4-host/start/' });
-run(inlineScripts('.gamezone-runtime/ps4-startup-router/index.html')[0], env, 'local-router.js');
-assert(env.location.href === '../900/', 'local Hub router did not automatically select its mounted 9.00 starter');
-assert(env.storage.size === 0, 'local router created an exploit launch ticket during handoff');
+  env = environment(`Mozilla/5.0 (PlayStation 4/${firmware}) AppleWebKit`, { pathname:'/ps4-host/start/' });
+  run(routerScript, env, `local-router-${firmware}.js`);
+  assert(env.location.href === localTarget, `local router selected the wrong ${firmware} starter`);
+  assert(env.storage.size === 0, `local ${firmware} handoff created an exploit launch ticket`);
+}
 
 env = environment('Mozilla/5.0 (PlayStation 4/9.01) AppleWebKit', { pathname:'/ps4-host/start/' });
-run(inlineScripts('.gamezone-runtime/ps4-startup-router/index.html')[0], env, 'unknown-router.js');
+run(routerScript, env, 'unknown-router.js');
 assert(env.location.href === '' && env.element('open').disabled === true, 'unknown firmware did not fail closed in the router');
 
 env = environment('Mozilla/5.0 (PlayStation 4/11.50) AppleWebKit');

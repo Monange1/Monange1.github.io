@@ -22,18 +22,21 @@
   var openEl=document.getElementById('open');
   openEl.disabled=true;
   var match=/PlayStation 4[\\/ ](\d+)\.(\d+)/.exec(navigator.userAgent);
-  var fw=match ? parseInt(match[1],10)+'.'+match[2].slice(0,2).padStart(2,'0') : null;
+  var minor=match ? match[2].slice(0,2) : '';
+  if(minor.length===1)minor='0'+minor;
+  var fw=match ? parseInt(match[1],10)+'.'+minor : null;
   var localHub=location.pathname.indexOf('/ps4-host/start')===0;
   var routes={
-    '9.00':localHub?'../900/':'../',
-    '11.00':'../1100/',
-    '11.02':'../1100/',
-    '11.50':'../modern/',
-    '12.00':'../modern/',
-    '12.02':'../modern/',
-    '12.50':'../modern/',
-    '12.52':'../modern/',
-    '13.00':'../modern/'
+    '6.72':'/672/',
+    '9.00':localHub?'/ps4-host/900/':'/',
+    '11.00':'/1100/',
+    '11.02':'/1100/',
+    '11.50':'/modern/',
+    '12.00':'/modern/',
+    '12.02':'/modern/',
+    '12.50':'/modern/',
+    '12.52':'/modern/',
+    '13.00':'/modern/'
   };
   var target=fw&&routes[fw];
   firmwareEl.textContent=fw?'Detected PS4 firmware '+fw:'No PS4 firmware detected';

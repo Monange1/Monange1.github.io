@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url';
 
 const repo = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 const hosts = [
+  ['6.72', '.gamezone-runtime/ps4-startup-672', 'cache.manifest'],
   ['9.00', '.gamezone-runtime/ps4-startup-900', 'gamezone-v12.appcache'],
   ['11.00-11.02', '.gamezone-runtime/ps4-startup-1100', 'cache.appcache'],
   ['router', '.gamezone-runtime/ps4-startup-router', 'cache.appcache'],
@@ -46,6 +47,7 @@ for (const [name, relativeRoot, manifestName] of hosts) {
 }
 
 const expected = new Map([
+  ['.gamezone-runtime/ps4-startup-672/goldhen_2.4b18.12.bin', 'df3f27c1b35bc7c40e3a08caab948930914dc7d0301a73b68945cf6ffe40ea12'],
   ['.gamezone-runtime/ps4-startup-900/payload.bin', 'c6329401d1810e16c84e6474ac30977dbdc951987c10cdb559370de7d59db0b0'],
   ['.gamezone-runtime/ps4-startup-1100/src/payload.bin', 'c6329401d1810e16c84e6474ac30977dbdc951987c10cdb559370de7d59db0b0'],
   ['.gamezone-runtime/ps4-startup-modern/payload.bin', 'c6329401d1810e16c84e6474ac30977dbdc951987c10cdb559370de7d59db0b0'],

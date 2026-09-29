@@ -90,15 +90,16 @@ assert(env.element('start').disabled === true && env.location.href === '', 'unkn
 
 const routerScript = inlineScripts('.gamezone-runtime/ps4-startup-router/index.html')[0];
 const firmwareRoutes = new Map([
-  ['9.00',  ['../', '../900/']],
-  ['11.00', ['../1100/', '../1100/']],
-  ['11.02', ['../1100/', '../1100/']],
-  ['11.50', ['../modern/', '../modern/']],
-  ['12.00', ['../modern/', '../modern/']],
-  ['12.02', ['../modern/', '../modern/']],
-  ['12.50', ['../modern/', '../modern/']],
-  ['12.52', ['../modern/', '../modern/']],
-  ['13.00', ['../modern/', '../modern/']],
+  ['6.72',  ['/672/', '/672/']],
+  ['9.00',  ['/', '/ps4-host/900/']],
+  ['11.00', ['/1100/', '/1100/']],
+  ['11.02', ['/1100/', '/1100/']],
+  ['11.50', ['/modern/', '/modern/']],
+  ['12.00', ['/modern/', '/modern/']],
+  ['12.02', ['/modern/', '/modern/']],
+  ['12.50', ['/modern/', '/modern/']],
+  ['12.52', ['/modern/', '/modern/']],
+  ['13.00', ['/modern/', '/modern/']],
 ]);
 for (const [firmware, [publicTarget, localTarget]] of firmwareRoutes) {
   env = environment(`Mozilla/5.0 (PlayStation 4/${firmware}) AppleWebKit`, { pathname:'/start/' });
@@ -111,6 +112,10 @@ for (const [firmware, [publicTarget, localTarget]] of firmwareRoutes) {
   assert(env.location.href === localTarget, `local router selected the wrong ${firmware} starter`);
   assert(env.storage.size === 0, `local ${firmware} handoff created an exploit launch ticket`);
 }
+
+env = environment('Mozilla/5.0 (PlayStation 4/6.72) AppleWebKit', { pathname:'/start' });
+run(routerScript, env, 'public-router-no-trailing-slash-672.js');
+assert(env.location.href === '/672/', 'public /start without a trailing slash did not select the 6.72 host');
 
 env = environment('Mozilla/5.0 (PlayStation 4/9.01) AppleWebKit', { pathname:'/ps4-host/start/' });
 run(routerScript, env, 'unknown-router.js');

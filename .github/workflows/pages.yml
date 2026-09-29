@@ -31,8 +31,9 @@ jobs:
           node .github/scripts/test-ps4-host-safety.mjs
       - name: Assemble firmware-specific hosts
         run: |
-          mkdir -p public/1100 public/start public/launch public/modern
+          mkdir -p public/672 public/1100 public/start public/launch public/modern
           cp -a .gamezone-runtime/ps4-startup-900/. public/
+          cp -a .gamezone-runtime/ps4-startup-672/. public/672/
           cp -a .gamezone-runtime/ps4-startup-1100/. public/1100/
           cp -a .gamezone-runtime/ps4-startup-router/. public/start/
           cp -a .gamezone-runtime/ps4-startup-router/. public/launch/

@@ -59,7 +59,7 @@ function environment(userAgent, initial = {}) {
   context.window = context;
   context.globalThis = context;
   vm.createContext(context);
-  return { context, element, appended, storage, location, applicationCache };
+  return { context, element, appended, storage, location, applicationCache, cacheListeners };
 }
 
 function run(code, env, name) {
@@ -146,5 +146,23 @@ env = environment('Mozilla/5.0 (PlayStation 4/9.00) AppleWebKit');
 const rootScript = inlineScripts('.gamezone-runtime/ps4-startup-900/index.html')[0];
 run(rootScript, env, 'nine.js');
 assert((env.context.fetches||0) === 0 && env.element('start').disabled === false, '9.00 performed work before a button press');
+
+env = environment('Mozilla/5.0 (PlayStation 4/9.00) AppleWebKit', { cacheStatus:2 });
+env.element('start').disabled = true;
+env.element('maintenance').disabled = true;
+run(rootScript, env, 'nine-offline-refresh.js');
+assert(env.element('start').disabled === true, '9.00 enabled before its cache check completed');
+env.applicationCache.status = env.applicationCache.IDLE;
+env.cacheListeners.error();
+assert(env.element('start').disabled === false, '9.00 rejected an installed cache after an offline manifest refresh failed');
+assert(env.element('status').textContent.startsWith('Offline cache loaded'), '9.00 did not explain that its installed offline cache was used');
+
+env = environment('Mozilla/5.0 (PlayStation 4/9.00) AppleWebKit', { cacheStatus:2 });
+env.element('start').disabled = true;
+env.element('maintenance').disabled = true;
+run(rootScript, env, 'nine-uncached-error.js');
+env.applicationCache.status = env.applicationCache.UNCACHED;
+env.cacheListeners.error();
+assert(env.element('start').disabled === true, '9.00 enabled without an installed offline cache');
 
 console.log('PS4 host safety state tests passed.');

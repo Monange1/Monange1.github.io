@@ -194,9 +194,22 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
           status.textContent = 'Offline update saved. Reload this page before starting GoldHEN.';
         }, false);
         cache.addEventListener('error', function () {
+          // The PS4 browser may keep navigator.onLine=true after the WAN is
+          // disconnected. Its manifest refresh then emits ERROR even though a
+          // complete previously installed AppCache is still active (IDLE).
+          // In that state the payload and exploit modules are safe to load
+          // from the existing cache; only UNCACHED/OBSOLETE means no usable
+          // offline installation exists.
+          if (cache.status === cache.IDLE || cache.status === cache.UPDATEREADY) {
+            if (cache.status === cache.UPDATEREADY) {
+              try { cache.swapCache(); } catch (_) {}
+            }
+            ready('Offline cache loaded. Press Start GoldHEN when you are ready.');
+            return;
+          }
           button.disabled = true;
           maintenance.disabled = true;
-          status.textContent = 'Offline cache failed. Check the connection and reload; GoldHEN was not started.';
+          status.textContent = 'Offline cache is not installed. Connect once, reload, and wait for Offline ready.';
         }, false);
       }
     }

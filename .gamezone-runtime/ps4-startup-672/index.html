@@ -3,6 +3,15 @@
 <head>
 <title>GameZone GoldHEN for PS4 6.72</title>
 <link rel="stylesheet" href="style.css">
+<style>
+/* GameZone managed 6.72 starter: keep the proven exploit, remove unrelated payload controls. */
+#menu > .btn, #menu > hr, #menu > br, #menu > h1:not(#msgs),
+#menu > select, #menu > font, #tools, #mods, body > h1 { display:none !important; }
+#menu > .btn:first-of-type { display:inline-block !important; width:78%; min-height:84px; margin-top:34px; font-size:30px; }
+#managedNote { display:block; width:78%; margin:22px auto 0; padding:18px; box-sizing:border-box;
+  color:#fff; background:rgba(0,0,0,.58); border:1px solid #18c8ff; border-radius:12px; font-size:20px; line-height:1.35; }
+#managedNote strong { color:#4ce5ff; }
+</style>
 <script>
 function DLProgress(e){Percent=(Math.round(e.loaded / e.total * 100));window.msgs.innerHTML="Installing Offline Cache: " + Percent + "%";}
 function DisplayCacheProgress(){setTimeout(function(){window.msgs.innerHTML="Cache Installed Successfully ✔";},1000);setTimeout(function(){window.msgs.innerHTML="Now Close And Re-Open Your Browser ...";},3000);}window.applicationCache.addEventListener("progress",DLProgress,false);window.applicationCache.oncached=function(e){DisplayCacheProgress();};window.applicationCache.onupdateready=function(e){DisplayCacheProgress();};
@@ -32,11 +41,12 @@ else {
 </head>
 <body>
 <div id="menu">
-<h1 id="msgs">PS4 6.72 FW Host v3.0 by GamerHack</h1>
+<h1 id="msgs">GameZone GoldHEN — PS4 Firmware 6.72</h1>
+<div id="managedNote"><strong>One-button managed start.</strong><br>Starts GoldHEN 2.4b18.12. If the GameZone tracker is already installed in GoldHEN AutoRun, it starts automatically. Otherwise, enable FTP after GoldHEN starts and install the tracker from the Hub.</div>
 <hr>
 <br>
 <h1 style="font-size: 18px;"><font color="green">Pass = <span id="passCounter"></span>&nbsp;&nbsp;&nbsp;&nbsp;<font color="yellow">Main Payloads</span>&nbsp;&nbsp;&nbsp;&nbsp;<font color="red">Fail = <span id="failCounter"></span></h1>
-<button class="btn" onclick="load_goldhen()"> GoldHEN v2.4b18.12 </button>
+<button class="btn" onclick="load_goldhen()"> Start GameZone GoldHEN </button>
 <button class="btn" onclick="load_hen()"> HEN v2.1.3 </button>
 <button class="btn" onclick="load_henb()"> HEN v2.1.3b </button>
 <button class="btn" onclick="load_mira()"> Mira </button>

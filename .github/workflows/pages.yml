@@ -33,6 +33,11 @@ jobs:
         run: |
           mkdir -p public/672 public/1100 public/start public/launch public/modern
           cp -a .gamezone-runtime/ps4-startup-900/. public/
+          # GitHub Pages maps extensionless /start to /start.html before it
+          # considers the /start/ directory. Remove the old 9.00 compatibility
+          # page from the published root so both /start and /start/ reach the
+          # firmware router.
+          rm -f public/start.html
           cp -a .gamezone-runtime/ps4-startup-672/. public/672/
           cp -a .gamezone-runtime/ps4-startup-1100/. public/1100/
           cp -a .gamezone-runtime/ps4-startup-router/. public/start/

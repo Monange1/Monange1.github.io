@@ -91,7 +91,7 @@ assert(env.element('start').disabled === true && env.location.href === '', 'unkn
 const routerScript = inlineScripts('.gamezone-runtime/ps4-startup-router/index.html')[0];
 const firmwareRoutes = new Map([
   ['6.72',  ['/672/', '/672/']],
-  ['9.00',  ['/', '/ps4-host/900/']],
+  ['9.00',  ['/900/', '/ps4-host/900/']],
   ['11.00', ['/1100/', '/1100/']],
   ['11.02', ['/1100/', '/1100/']],
   ['11.50', ['/modern/', '/modern/']],

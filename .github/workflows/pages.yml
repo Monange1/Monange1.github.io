@@ -31,8 +31,11 @@ jobs:
           node .github/scripts/test-ps4-host-safety.mjs
       - name: Assemble firmware-specific hosts
         run: |
-          mkdir -p public/672 public/1100 public/start public/launch public/modern
+          mkdir -p public/672 public/900 public/1100 public/start public/launch public/modern
           cp -a .gamezone-runtime/ps4-startup-900/. public/
+          # A fresh 9.00 URL creates a separate PS4 AppCache group. Older
+          # cached copies of / cannot intercept this first installation.
+          cp -a .gamezone-runtime/ps4-startup-900/. public/900/
           # GitHub Pages maps extensionless /start to /start.html before it
           # considers the /start/ directory. Remove the old 9.00 compatibility
           # page from the published root so both /start and /start/ reach the

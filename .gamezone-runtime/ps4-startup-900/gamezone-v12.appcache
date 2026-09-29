@@ -1,0 +1,25 @@
+CACHE MANIFEST
+# GameZone GoldHEN 9.00 offline starter 2026-09-29-v12
+
+CACHE:
+index.html
+alert.mjs
+config.mjs
+icon0.jpg
+lapse.mjs
+payload.bin
+goldhen-2.4b18-maintenance.bin
+psfree.mjs
+module/chain.mjs
+module/constants.mjs
+module/int64.mjs
+module/mem.mjs
+module/memtools.mjs
+module/offset.mjs
+module/rw.mjs
+module/utils.mjs
+module/view.mjs
+rop/900.mjs
+
+NETWORK:
+*

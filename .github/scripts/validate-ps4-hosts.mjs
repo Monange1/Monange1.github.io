@@ -5,7 +5,7 @@ import { fileURLToPath } from 'node:url';
 
 const repo = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 const hosts = [
-  ['9.00', '.gamezone-runtime/ps4-startup-900', 'gamezone.appcache'],
+  ['9.00', '.gamezone-runtime/ps4-startup-900', 'gamezone-v12.appcache'],
   ['11.00-11.02', '.gamezone-runtime/ps4-startup-1100', 'cache.appcache'],
   ['router', '.gamezone-runtime/ps4-startup-router', 'cache.appcache'],
   ['11.00-13.00-lab', '.gamezone-runtime/ps4-startup-modern', 'cache.appcache'],
@@ -69,6 +69,7 @@ const modernLapse = readFileSync(join(repo, '.gamezone-runtime/ps4-startup-moder
 const modernPoops = readFileSync(join(repo, '.gamezone-runtime/ps4-startup-modern/run_poops.html'), 'utf8');
 
 if (!rootIndex.includes('button id="start" type="button" disabled')) fail('9.00: manual start button is not fail-closed');
+if (!rootIndex.includes('manifest="gamezone-v12.appcache"')) fail('9.00: entry page does not use the current isolated offline cache');
 if (rootCompat.includes("import('./alert.mjs')")) fail('9.00: compatibility URL can still execute the exploit');
 if (elevenScript.includes('countdown(') || elevenScript.includes('checkbox.checked = true')) fail('11.00: automatic startup returned');
 if (!modernLapse.includes('gamezone-launch-ticket') || !modernPoops.includes('gamezone-launch-ticket')) fail('modern host: protected launch ticket is missing');

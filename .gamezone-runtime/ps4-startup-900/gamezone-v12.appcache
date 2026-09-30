@@ -1,5 +1,5 @@
 CACHE MANIFEST
-# GameZone GoldHEN 9.00 offline starter 2026-09-29-v14-fresh-route
+# GameZone GoldHEN 9.00 offline starter 2026-09-30-v15-preloaded-kernel-patch
 
 CACHE:
 index.html
@@ -9,6 +9,7 @@ icon0.jpg
 lapse.mjs
 payload.bin
 goldhen-2.4b18-maintenance.bin
+kpatch/900.elf
 psfree.mjs
 module/chain.mjs
 module/constants.mjs

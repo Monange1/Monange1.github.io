@@ -54,6 +54,7 @@ const expected = new Map([
   ['.gamezone-runtime/ps4-startup-672/goldhen-2.4b18.12.bin', 'df3f27c1b35bc7c40e3a08caab948930914dc7d0301a73b68945cf6ffe40ea12'],
   ['.gamezone-runtime/ps4-startup-672/exploit-engine.js', '2d5b2d5fdf721409da981a1c21974ad6db002f5336bcbdb76049d060fb24f00b'],
   ['.gamezone-runtime/ps4-startup-900/payload.bin', 'c6329401d1810e16c84e6474ac30977dbdc951987c10cdb559370de7d59db0b0'],
+  ['.gamezone-runtime/ps4-startup-900/kpatch/900.elf', '56183734c0b4c694344971479c3e070a6a6f0d13f783804b1610218314a7ae33'],
   ['.gamezone-runtime/ps4-startup-1100/src/payload.bin', 'c6329401d1810e16c84e6474ac30977dbdc951987c10cdb559370de7d59db0b0'],
   ['.gamezone-runtime/ps4-startup-modern/payload.bin', 'c6329401d1810e16c84e6474ac30977dbdc951987c10cdb559370de7d59db0b0'],
   ['.gamezone-runtime/ps4-startup-900/goldhen-2.4b18-maintenance.bin', 'eb9fee5e9e3618c0a144a6fc6b8fc1ec7e89cf06483ad64ae7c1085efc9525a3'],
@@ -74,12 +75,17 @@ const rootCompat = readFileSync(join(repo, '.gamezone-runtime/ps4-startup-900/st
 const sixIndex = readFileSync(join(repo, '.gamezone-runtime/ps4-startup-672/index.html'), 'utf8');
 const sixScript = readFileSync(join(repo, '.gamezone-runtime/ps4-startup-672/includes/script.js'), 'utf8');
 const elevenScript = readFileSync(join(repo, '.gamezone-runtime/ps4-startup-1100/includes/script.js'), 'utf8');
+const nineManifest = readFileSync(join(repo, '.gamezone-runtime/ps4-startup-900/gamezone-v12.appcache'), 'utf8');
+const nineLapse = readFileSync(join(repo, '.gamezone-runtime/ps4-startup-900/lapse.mjs'), 'utf8');
 const modernLapse = readFileSync(join(repo, '.gamezone-runtime/ps4-startup-modern/run_lapse.html'), 'utf8');
 const modernPoops = readFileSync(join(repo, '.gamezone-runtime/ps4-startup-modern/run_poops.html'), 'utf8');
 
 if (!rootIndex.includes('button id="start" type="button" disabled')) fail('9.00: manual start button is not fail-closed');
 if (!rootIndex.includes('manifest="gamezone-v12.appcache"')) fail('9.00: entry page does not use the current isolated offline cache');
 if (rootCompat.includes("import('./alert.mjs')")) fail('9.00: compatibility URL can still execute the exploit');
+if (!nineManifest.includes('kpatch/900.elf')) fail('9.00: kernel patch is missing from the offline cache');
+if (nineLapse.includes("req.open('GET','payload.bin')") || nineLapse.includes('await fetch(url)')) fail('9.00: exploit performs a network load after kernel work starts');
+if (!rootIndex.includes('window.gamezonePayloadBuffer = binary') || !rootIndex.includes('window.gamezoneKpatchBuffer = patchBinary')) fail('9.00: verified exploit assets are not preloaded');
 if (!sixIndex.includes('button id="start" type="button" disabled')) fail('6.72: manual start button is not fail-closed');
 if (!sixIndex.includes('manifest="cache.appcache?v=20260930-1"')) fail('6.72: entry page does not use the current isolated offline cache');
 if (!sixScript.includes('firmware() === "6.72"') || sixScript.includes('setTimeout(jailbreak')) fail('6.72: exact firmware lock or manual start guarantee is missing');

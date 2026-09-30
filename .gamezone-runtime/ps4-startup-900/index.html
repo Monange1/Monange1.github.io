@@ -114,7 +114,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
     <button id="start" type="button" disabled>Start GoldHEN</button>
     <button id="maintenance" class="secondary" type="button" disabled>Maintenance GoldHEN (no tracker AutoRun)</button>
     <pre id="console"></pre>
-    <p class="secondary">Offline package GZ9 v14</p>
+    <p class="secondary">Offline package GZ9 v15</p>
   </div>
 
   <script type="module">
@@ -154,6 +154,12 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
         if (!response.ok) throw new Error('Payload download failed: HTTP ' + response.status);
         const binary = await response.arrayBuffer();
         if (binary.byteLength !== payloadSize) throw new Error('Payload verification failed: unexpected size');
+        const patchResponse = await fetch('./kpatch/900.elf');
+        if (!patchResponse.ok) throw new Error('Kernel patch load failed: HTTP ' + patchResponse.status);
+        const patchBinary = await patchResponse.arrayBuffer();
+        if (patchBinary.byteLength !== 5288) throw new Error('Kernel patch verification failed: unexpected size');
+        window.gamezonePayloadBuffer = binary;
+        window.gamezoneKpatchBuffer = patchBinary;
         window.pld = new Uint32Array(binary);
         status.textContent = recovery ? 'Starting maintenance GoldHEN. The GameZone tracker will not AutoRun.' : 'Starting GoldHEN. Wait for the notification…';
         await import('./alert.mjs');

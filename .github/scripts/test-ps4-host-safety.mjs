@@ -56,6 +56,7 @@ function environment(userAgent, initial = {}) {
     fetch(){ initial.fetches=(initial.fetches||0)+1; return Promise.reject(new Error('unexpected fetch')); },
     Date, JSON, Math, Uint32Array, URLSearchParams,
   };
+  context.localStorage = context.sessionStorage;
   context.window = context;
   context.globalThis = context;
   vm.createContext(context);
@@ -132,6 +133,22 @@ assert(env.appended.length === 1 && env.appended[0].src === './chain_lapse.js', 
 assert(!env.storage.has('gamezone-launch-ticket'), 'launch ticket was not consumed');
 
 let calls = 0;
+env = environment('Mozilla/5.0 (PlayStation 4/6.72) AppleWebKit');
+env.context.jailbreak = () => { calls += 1; };
+run(readFileSync(join(repo, '.gamezone-runtime/ps4-startup-672/includes/script.js'),'utf8'), env, 'six.js');
+assert(calls === 0 && env.element('start').disabled === false, '6.72 auto-started or stayed unavailable');
+env.element('start').click();
+env.element('start').click();
+assert(calls === 1 && env.context.PLfile === 'goldhen-2.4b18.12.bin', '6.72 did not enforce one exact payload attempt');
+
+calls = 0;
+env = environment('Mozilla/5.0 (PlayStation 4/6.71) AppleWebKit');
+env.context.jailbreak = () => { calls += 1; };
+run(readFileSync(join(repo, '.gamezone-runtime/ps4-startup-672/includes/script.js'),'utf8'), env, 'six-wrong-firmware.js');
+env.element('start').click();
+assert(calls === 0 && env.element('start').disabled === true, '6.72 host did not fail closed on nearby firmware');
+
+calls = 0;
 env = environment('Mozilla/5.0 (PlayStation 4/11.00) AppleWebKit');
 env.context.doJb = () => { calls += 1; };
 run(readFileSync(join(repo, '.gamezone-runtime/ps4-startup-1100/includes/script.js'),'utf8'), env, 'eleven.js');

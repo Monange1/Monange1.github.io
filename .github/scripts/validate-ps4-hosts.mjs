@@ -5,7 +5,7 @@ import { fileURLToPath } from 'node:url';
 
 const repo = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 const hosts = [
-  ['6.72', '.gamezone-runtime/ps4-startup-672', 'cache.manifest'],
+  ['6.72', '.gamezone-runtime/ps4-startup-672', 'cache.appcache'],
   ['9.00', '.gamezone-runtime/ps4-startup-900', 'gamezone-v12.appcache'],
   ['11.00-11.02', '.gamezone-runtime/ps4-startup-1100', 'cache.appcache'],
   ['router', '.gamezone-runtime/ps4-startup-router', 'cache.appcache'],
@@ -17,7 +17,11 @@ function fail(message) {
 }
 
 function sha256(relative) {
-  return createHash('sha256').update(readFileSync(join(repo, relative))).digest('hex');
+  const contents = readFileSync(join(repo, relative));
+  const stable = relative.endsWith('exploit-engine.js')
+    ? Buffer.from(contents.toString('utf8').replace(/\r\n/g, '\n'))
+    : contents;
+  return createHash('sha256').update(stable).digest('hex');
 }
 
 function cacheEntries(manifestPath) {
@@ -47,7 +51,8 @@ for (const [name, relativeRoot, manifestName] of hosts) {
 }
 
 const expected = new Map([
-  ['.gamezone-runtime/ps4-startup-672/goldhen_2.4b18.12.bin', 'df3f27c1b35bc7c40e3a08caab948930914dc7d0301a73b68945cf6ffe40ea12'],
+  ['.gamezone-runtime/ps4-startup-672/goldhen-2.4b18.12.bin', 'df3f27c1b35bc7c40e3a08caab948930914dc7d0301a73b68945cf6ffe40ea12'],
+  ['.gamezone-runtime/ps4-startup-672/exploit-engine.js', '2d5b2d5fdf721409da981a1c21974ad6db002f5336bcbdb76049d060fb24f00b'],
   ['.gamezone-runtime/ps4-startup-900/payload.bin', 'c6329401d1810e16c84e6474ac30977dbdc951987c10cdb559370de7d59db0b0'],
   ['.gamezone-runtime/ps4-startup-1100/src/payload.bin', 'c6329401d1810e16c84e6474ac30977dbdc951987c10cdb559370de7d59db0b0'],
   ['.gamezone-runtime/ps4-startup-modern/payload.bin', 'c6329401d1810e16c84e6474ac30977dbdc951987c10cdb559370de7d59db0b0'],
@@ -66,6 +71,8 @@ for (const [relative, hash] of expected) {
 
 const rootIndex = readFileSync(join(repo, '.gamezone-runtime/ps4-startup-900/index.html'), 'utf8');
 const rootCompat = readFileSync(join(repo, '.gamezone-runtime/ps4-startup-900/start.html'), 'utf8');
+const sixIndex = readFileSync(join(repo, '.gamezone-runtime/ps4-startup-672/index.html'), 'utf8');
+const sixScript = readFileSync(join(repo, '.gamezone-runtime/ps4-startup-672/includes/script.js'), 'utf8');
 const elevenScript = readFileSync(join(repo, '.gamezone-runtime/ps4-startup-1100/includes/script.js'), 'utf8');
 const modernLapse = readFileSync(join(repo, '.gamezone-runtime/ps4-startup-modern/run_lapse.html'), 'utf8');
 const modernPoops = readFileSync(join(repo, '.gamezone-runtime/ps4-startup-modern/run_poops.html'), 'utf8');
@@ -73,6 +80,10 @@ const modernPoops = readFileSync(join(repo, '.gamezone-runtime/ps4-startup-moder
 if (!rootIndex.includes('button id="start" type="button" disabled')) fail('9.00: manual start button is not fail-closed');
 if (!rootIndex.includes('manifest="gamezone-v12.appcache"')) fail('9.00: entry page does not use the current isolated offline cache');
 if (rootCompat.includes("import('./alert.mjs')")) fail('9.00: compatibility URL can still execute the exploit');
+if (!sixIndex.includes('button id="start" type="button" disabled')) fail('6.72: manual start button is not fail-closed');
+if (!sixIndex.includes('manifest="cache.appcache?v=20260930-1"')) fail('6.72: entry page does not use the current isolated offline cache');
+if (!sixScript.includes('firmware() === "6.72"') || sixScript.includes('setTimeout(jailbreak')) fail('6.72: exact firmware lock or manual start guarantee is missing');
+if (/GamerHack|Main Payloads|pl_FTP|load_goldhen/i.test(sixIndex)) fail('6.72: legacy multi-payload menu returned');
 if (elevenScript.includes('countdown(') || elevenScript.includes('checkbox.checked = true')) fail('11.00: automatic startup returned');
 if (!modernLapse.includes('gamezone-launch-ticket') || !modernPoops.includes('gamezone-launch-ticket')) fail('modern host: protected launch ticket is missing');
 

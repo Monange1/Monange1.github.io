@@ -49,7 +49,7 @@
     statusEl.textContent='Opening the '+fw+' starter…';
     if(window.location.replace)window.location.replace(target);else window.location.href=target;
   }
-  statusEl.textContent=fw==='9.00'?'Certified 9.00 starter found. Opening it now…':'Firmware-specific test starter found. Opening it now…';
+  statusEl.textContent=(fw==='6.72'||fw==='9.00')?'Certified '+fw+' starter found. Opening it now…':'Firmware-specific test starter found. Opening it now…';
   openEl.disabled=false;
   openEl.addEventListener('click',openStarter);
   window.setTimeout(openStarter,80);

@@ -1,0 +1,14 @@
+CACHE MANIFEST
+# GameZone PS4 6.72 build 2026-09-30-1-manual-offline
+
+CACHE:
+index.html
+exploit-engine.js
+goldhen-2.4b18.12.bin
+includes/background.jpg
+includes/logo.png
+includes/script.js
+includes/style.css
+
+NETWORK:
+*

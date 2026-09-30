@@ -1,0 +1,44 @@
+* { box-sizing: border-box; }
+html, body { width: 100%; min-height: 100%; margin: 0; }
+body {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 22px;
+  background-color: #03152f;
+  background-image: linear-gradient(rgba(1, 10, 28, .20), rgba(1, 10, 28, .36)), url("background.jpg");
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: cover;
+  color: #fff;
+  font: 20px Arial, sans-serif;
+  text-align: center;
+}
+.card {
+  width: 820px;
+  max-width: 94%;
+  padding: 32px;
+  border: 1px solid rgba(121, 198, 255, .35);
+  border-radius: 18px;
+  background: rgba(0, 0, 0, .52);
+  box-shadow: 0 24px 80px rgba(0, 0, 0, .55);
+}
+.logo { width: 110px; height: 110px; object-fit: contain; }
+.eyebrow { margin: 4px 0 8px; color: #71e7ff; font: bold 13px/1.2 monospace; letter-spacing: 2px; }
+h1 { margin: 8px 0 16px; font-size: 34px; }
+#firmware { margin: 0 0 18px; color: #93afd7; font-size: 15px; }
+.status { min-height: 54px; margin: 14px 0; color: #e6f2ff; font-weight: bold; }
+button {
+  width: 100%;
+  min-height: 66px;
+  margin-top: 10px;
+  border: 2px solid #69d5ff;
+  border-radius: 11px;
+  background: #164c86;
+  color: #fff;
+  font-size: 22px;
+  font-weight: bold;
+}
+button:disabled { opacity: .42; }
+.help { margin: 20px auto 0; max-width: 650px; color: #a8bdd8; font-size: 14px; line-height: 1.5; }
+.counters { margin-top: 15px; color: #7790ae; font: 12px/1.4 monospace; }

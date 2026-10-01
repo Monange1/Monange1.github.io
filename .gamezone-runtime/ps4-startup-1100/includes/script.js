@@ -82,7 +82,7 @@
     status.textContent = "Offline storage is unavailable. Reload with an internet connection.";
     return;
   }
-  if (!navigator.onLine || cache.status === cache.IDLE) {
+  if (cache.status === cache.IDLE) {
     setReady();
     return;
   }
@@ -105,8 +105,19 @@
     status.textContent = "Offline update saved. Reload this page before starting GoldHEN.";
   }, false);
   cache.addEventListener("error", function () {
+    // PS4 WebKit often keeps navigator.onLine=true while the WAN is down.
+    // The AppCache update check then emits ERROR even though the complete,
+    // previously installed cache remains active. IDLE is that usable state;
+    // UNCACHED/OBSOLETE means there is no safe offline package to launch.
+    if (cache.status === cache.IDLE || cache.status === cache.UPDATEREADY) {
+      if (cache.status === cache.UPDATEREADY) {
+        try { cache.swapCache(); } catch (_) {}
+      }
+      setReady("Offline cache loaded. Press Start GoldHEN when you are ready.");
+      return;
+    }
     button.disabled = true;
     maintenance.disabled = true;
-    status.textContent = "Offline cache failed. Check the connection and reload; GoldHEN was not started.";
+    status.textContent = "Offline cache is not installed. Connect once, reload, and wait for Offline ready.";
   }, false);
 })();

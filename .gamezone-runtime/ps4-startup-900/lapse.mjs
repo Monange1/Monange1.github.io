@@ -1809,45 +1809,46 @@ function array_from_address(addr, size) {
     return og_array;
 }
 
-kexploit().then(() => {
+function runVerifiedPayload(buffer, label) {
+    if (!buffer || !buffer.byteLength) {
+        throw Error(`Verified ${label} payload was not loaded before exploit start`);
+    }
 
- const PROT_READ = 1;
- const PROT_WRITE = 2;
- const PROT_EXEC = 4;
-
-var loader_addr = chain.sysp(
-  'mmap',
-  new Int(0, 0),                         
-  0x1000,                               
-  PROT_READ | PROT_WRITE | PROT_EXEC,    
-  0x41000,                              
-  -1,
-  0
-);
-
- var tmpStubArray = array_from_address(loader_addr, 1);
- tmpStubArray[0] = 0x00C3E7FF;
-
-   var PLD = window.gamezonePayloadBuffer;
-   if (!PLD || !PLD.byteLength) {
-    throw Error('Verified GoldHEN payload was not loaded before exploit start');
-   }
-   var payload_buffer = chain.sysp('mmap', 0, 0x300000, 7, 0x41000, -1, 0);
-   var pl = array_from_address(payload_buffer, PLD.byteLength*4);
-   var padding = new Uint8Array(4 - (PLD.byteLength % 4) % 4);
-   var tmp = new Uint8Array(PLD.byteLength + padding.byteLength);
-   tmp.set(new Uint8Array(PLD), 0);
-   tmp.set(padding, PLD.byteLength);
-   var shellcode = new Uint32Array(tmp.buffer);
-   pl.set(shellcode,0);
-   var pthread = malloc(0x10);
-   
-    call_nze(
-        'pthread_create',
-        pthread,
+    const PROT_READ = 1;
+    const PROT_WRITE = 2;
+    const PROT_EXEC = 4;
+    const loader_addr = chain.sysp(
+        'mmap',
+        new Int(0, 0),
+        0x1000,
+        PROT_READ | PROT_WRITE | PROT_EXEC,
+        0x41000,
+        -1,
         0,
-        loader_addr,
-        payload_buffer,
-    );	
+    );
 
+    const tmpStubArray = array_from_address(loader_addr, 1);
+    tmpStubArray[0] = 0x00C3E7FF;
+
+    const payload_buffer = chain.sysp('mmap', 0, 0x300000, 7, 0x41000, -1, 0);
+    const padding = new Uint8Array((4 - (buffer.byteLength % 4)) % 4);
+    const tmp = new Uint8Array(buffer.byteLength + padding.byteLength);
+    tmp.set(new Uint8Array(buffer), 0);
+    const shellcode = new Uint32Array(tmp.buffer);
+    const payloadView = array_from_address(payload_buffer, shellcode.length);
+    payloadView.set(shellcode, 0);
+
+    const pthread = malloc(0x10);
+    call_nze('pthread_create', pthread, 0, loader_addr, payload_buffer);
+    log(`${label} payload started`);
+}
+
+kexploit().then(() => {
+    // Apply the upstream process_dtor_handler/AIO stability patch before
+    // GoldHEN. Both buffers were fetched and size-checked before kernel work,
+    // so no network or AppCache request can interrupt this sequence.
+    runVerifiedPayload(window.gamezoneAioBuffer, 'AIO stability patch');
+    setTimeout(() => {
+        runVerifiedPayload(window.gamezonePayloadBuffer, 'GoldHEN');
+    }, 1000);
 })

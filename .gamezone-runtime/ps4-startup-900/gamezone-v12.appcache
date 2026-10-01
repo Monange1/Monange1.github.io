@@ -1,5 +1,5 @@
 CACHE MANIFEST
-# GameZone GoldHEN 9.00 offline starter 2026-09-30-v15-preloaded-kernel-patch
+# GameZone GoldHEN 9.00 offline starter 2026-10-01-v16-aio-sequenced
 
 CACHE:
 index.html
@@ -7,6 +7,7 @@ alert.mjs
 config.mjs
 icon0.jpg
 lapse.mjs
+aio_patches.bin
 payload.bin
 goldhen-2.4b18-maintenance.bin
 kpatch/900.elf

@@ -164,6 +164,24 @@ run(readFileSync(join(repo, '.gamezone-runtime/ps4-startup-1100/includes/script.
 env.element('maintenance').click();
 assert(calls === 1 && env.context.payloadPath.endsWith('goldhen-2.4b18-maintenance.bin'), '11.00 maintenance mode did not select the no-AutoRun payload');
 
+calls = 0;
+env = environment('Mozilla/5.0 (PlayStation 4/11.00) AppleWebKit', { cacheStatus:2 });
+env.context.doJb = () => { calls += 1; };
+run(readFileSync(join(repo, '.gamezone-runtime/ps4-startup-1100/includes/script.js'),'utf8'), env, 'eleven-offline-refresh.js');
+assert(env.element('jeilbrek').disabled === true, '11.00 enabled before its cache check completed');
+env.applicationCache.status = env.applicationCache.IDLE;
+env.cacheListeners.error();
+assert(env.element('jeilbrek').disabled === false, '11.00 rejected an installed cache after an offline manifest refresh failed');
+assert(env.element('status').textContent.startsWith('Offline cache loaded'), '11.00 did not explain that its installed offline cache was used');
+
+calls = 0;
+env = environment('Mozilla/5.0 (PlayStation 4/11.00) AppleWebKit', { cacheStatus:2 });
+env.context.doJb = () => { calls += 1; };
+run(readFileSync(join(repo, '.gamezone-runtime/ps4-startup-1100/includes/script.js'),'utf8'), env, 'eleven-uncached-error.js');
+env.applicationCache.status = env.applicationCache.UNCACHED;
+env.cacheListeners.error();
+assert(env.element('jeilbrek').disabled === true && calls === 0, '11.00 enabled without an installed offline cache');
+
 env = environment('Mozilla/5.0 (PlayStation 4/9.00) AppleWebKit');
 const rootScript = inlineScripts('.gamezone-runtime/ps4-startup-900/index.html')[0];
 run(rootScript, env, 'nine.js');

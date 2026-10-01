@@ -8,6 +8,7 @@ const hosts = [
   ['6.72', '.gamezone-runtime/ps4-startup-672', 'cache.appcache'],
   ['9.00', '.gamezone-runtime/ps4-startup-900', 'gamezone-v12.appcache'],
   ['11.00-11.02', '.gamezone-runtime/ps4-startup-1100', 'cache.appcache'],
+  ['12.00-test', '.gamezone-runtime/ps4-startup-1200', 'cache.appcache'],
   ['router', '.gamezone-runtime/ps4-startup-router', 'cache.appcache'],
   ['11.00-13.00-lab', '.gamezone-runtime/ps4-startup-modern', 'cache.appcache'],
 ];
@@ -58,6 +59,8 @@ const expected = new Map([
   ['.gamezone-runtime/ps4-startup-900/aio_patches.bin', 'edf729eb5fe532b679cf2f7fb7c9af852d83199ad6d1364d40fb68b9983ac1e5'],
   ['.gamezone-runtime/ps4-startup-1100/src/payload.bin', 'c6329401d1810e16c84e6474ac30977dbdc951987c10cdb559370de7d59db0b0'],
   ['.gamezone-runtime/ps4-startup-modern/payload.bin', 'c6329401d1810e16c84e6474ac30977dbdc951987c10cdb559370de7d59db0b0'],
+  ['.gamezone-runtime/ps4-startup-1200/payload.bin', 'c6329401d1810e16c84e6474ac30977dbdc951987c10cdb559370de7d59db0b0'],
+  ['.gamezone-runtime/ps4-startup-1200/patches/1200.bin', '87f1d40aea8fbf3adee7b8b5599d90c9d868436c15a498f2dce6bf5d96ae4d27'],
   ['.gamezone-runtime/ps4-startup-900/goldhen-2.4b18-maintenance.bin', 'eb9fee5e9e3618c0a144a6fc6b8fc1ec7e89cf06483ad64ae7c1085efc9525a3'],
   ['.gamezone-runtime/ps4-startup-1100/src/goldhen-2.4b18-maintenance.bin', 'eb9fee5e9e3618c0a144a6fc6b8fc1ec7e89cf06483ad64ae7c1085efc9525a3'],
   ['.gamezone-runtime/ps4-startup-modern/patches/1100.bin', '15497a2b748dafd49bfb89c51ed048d0c5ba3c5092c5254da46dd4443f80983b'],
@@ -99,3 +102,15 @@ if (!elevenScript.includes('cache.status === cache.IDLE || cache.status === cach
 if (!modernLapse.includes('gamezone-launch-ticket') || !modernPoops.includes('gamezone-launch-ticket')) fail('modern host: protected launch ticket is missing');
 
 console.log('All GameZone firmware hosts passed cache, origin, safety, and integrity checks.');
+
+const twelveRoot = '.gamezone-runtime/ps4-startup-1200';
+const twelveIntegrity = JSON.parse(readFileSync(join(repo,twelveRoot,'integrity.json'),'utf8'));
+for (const [path, expectedFile] of Object.entries(twelveIntegrity.files)) {
+  const buffer = readFileSync(join(repo,twelveRoot,path));
+  if (buffer.length !== expectedFile.size || sha256(`${twelveRoot}/${path}`) !== expectedFile.sha256) fail(`12.00: stale integrity metadata for ${path}`);
+  if (!cacheEntries(join(repo,twelveRoot,'cache.appcache')).includes(path)) fail(`12.00: ${path} is missing from the offline package`);
+}
+const twelveChain = readFileSync(join(repo,twelveRoot,'chain_lapse.js'),'utf8');
+if (!twelveChain.includes('maxAttempts: 1,') || twelveChain.includes('await fetch(') || twelveChain.includes('kpatched || params.get("payload")')) fail('12.00: unsafe retry/network/payload override returned');
+if (twelveIntegrity.qualification !== 'TEST_ONLY_NOT_HARDWARE_VERIFIED') fail('12.00: unverified build was relabeled as production');
+console.log('Dedicated 12.00 test package passed integrity and fail-closed checks.');

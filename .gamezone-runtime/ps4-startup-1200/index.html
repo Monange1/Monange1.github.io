@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en" manifest="cache.appcache?v=20261001-1">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>GameZone GoldHEN — PS4 12.00</title>
+<style>
+*{box-sizing:border-box}html,body{min-height:100%;margin:0}body{display:flex;align-items:center;justify-content:center;padding:24px;color:#eff8ff;background:radial-gradient(circle at 20% 5%,#16447f,#07152e 43%,#030812 80%);font:19px/1.45 Arial,sans-serif}main{width:850px;max-width:96%;padding:32px;text-align:center;background:rgba(3,9,20,.92);border:1px solid #2a689a;border-radius:20px;box-shadow:0 24px 80px #0009}img{width:110px;height:110px;object-fit:contain}h1{font-size:34px;margin:10px 0}#firmware{color:#6be5ff}#status{min-height:58px}.warning{padding:14px;border:1px solid #805f29;border-radius:10px;background:#251c0e;color:#ffdb99;font-size:16px}button{width:100%;min-height:64px;margin-top:16px;border:2px solid #72dfff;border-radius:11px;background:#15528e;color:white;font-size:22px;font-weight:bold}button:disabled{opacity:.4}.meta{font-size:14px;color:#90a9c5}
+</style></head>
+<body><main>
+<img src="logo.png" alt="GameZone">
+<h1>GameZone GoldHEN — Firmware 12.00</h1>
+<p id="firmware">Detecting this PS4…</p>
+<p id="status">Checking the complete offline starter…</p>
+<p class="warning">12.00 test build — not yet verified on a GameZone PS4. A jailbreak can freeze or restart the console. Back up saved games first. This does not certify the GameZone tracker for 12.00.</p>
+<button id="start" type="button" disabled>Acknowledge test build</button>
+<p class="meta">GZ12 v1 · Slopkit + Lapse · GoldHEN 2.4b18.10<br>Save once online, then reopen this exact address to test offline. Manual start; no automatic retry.</p>
+<p class="meta">Credits: Jordy, Raw Game, abc, Al-Azif and the GoldHEN team.</p>
+</main><script>
+(function () {
+  var start = document.getElementById('start');
+  var status = document.getElementById('status');
+  var firmware = document.getElementById('firmware');
+  var build = 'GZ12-20261001-1';
+  var ticketKey = 'gamezone-1200-launch';
+  var ready = false, acknowledged = false, launched = false;
+  var match = /PlayStation 4[\\/ ](\d+)\.(\d+)(?:\D|$)/.exec(navigator.userAgent);
+  var exact = !!match && match[1] === '12' && match[2] === '00';
+  start.disabled = true;
+  try { sessionStorage.removeItem(ticketKey); } catch (_) {}
+  firmware.textContent = match ? 'Detected PS4 firmware ' + match[1] + '.' + match[2] : 'No PS4 firmware detected';
+  if (!exact) { status.textContent = 'STOP: this starter accepts only PS4 firmware 12.00. Open /start/ for other versions.'; return; }
+  if (location.search || location.hash) { status.textContent = 'STOP: remove the query or fragment and reopen /1200/. Custom exploit overrides are disabled.'; return; }
+
+  function available(message) {
+    if (launched) return;
+    ready = true; start.disabled = false;
+    status.textContent = message || 'Offline package saved. Read the warning, then acknowledge this test build.';
+  }
+  function blocked(message) {
+    ready = false; start.disabled = true; status.textContent = message;
+  }
+  function update() {
+    blocked('Offline update saved. Reload this page before starting.');
+    try { cache.swapCache(); } catch (_) {}
+  }
+  start.addEventListener('click', function () {
+    if (!exact || !ready || launched) return;
+    if (!acknowledged) {
+      acknowledged = true; start.textContent = 'Start GoldHEN — test PS4';
+      status.textContent = 'Press again for one attempt. Close any running game first. Wait for the GoldHEN notification before leaving the browser.';
+      return;
+    }
+    launched = true; start.disabled = true;
+    try {
+      sessionStorage.setItem(ticketKey, JSON.stringify({build:build, firmware:'12.00', issuedAt:Date.now()}));
+    } catch (_) { blocked('Protected launch storage is unavailable. Nothing was started.'); return; }
+    status.textContent = 'Verifying the exact 12.00 assets before starting…';
+    window.location.href = 'run_lapse.html';
+  });
+
+  var cache = window.applicationCache;
+  if (!cache) { blocked('Offline storage is unavailable in this browser. Nothing was started.'); return; }
+  cache.addEventListener('cached', function () { available(); }, false);
+  cache.addEventListener('noupdate', function () {
+    if (cache.status === cache.IDLE) available('Installed offline package loaded. No internet is needed for startup.');
+  }, false);
+  cache.addEventListener('updateready', update, false);
+  cache.addEventListener('obsolete', function () { blocked('Offline package is obsolete. Reconnect and reload; nothing was started.'); }, false);
+  cache.addEventListener('error', function () {
+    // An unreachable manifest does not invalidate a previously installed cache.
+    if (cache.status === cache.IDLE) available('Installed offline package loaded. The internet refresh failed, but startup uses the saved files.');
+    else if (cache.status === cache.UPDATEREADY) update();
+    else blocked('Offline cache is not installed. Connect once and reload; wait until the package is saved. Nothing was started.');
+  }, false);
+  cache.addEventListener('progress', function (event) {
+    blocked(event && event.total ? 'Saving offline package: ' + Math.round(event.loaded / event.total * 100) + '%' : 'Saving every file for offline use…');
+  }, false);
+  if (cache.status === cache.IDLE) available('Installed offline package loaded. No internet is needed for startup.');
+  else if (cache.status === cache.UPDATEREADY) update();
+  else blocked('Saving every required file for offline use. Please wait…');
+})();
+</script></body></html>

@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import vm from 'node:vm';
+import { createHash, randomBytes } from 'node:crypto';
 
 const repo = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 
@@ -38,7 +39,7 @@ function environment(userAgent, initial = {}) {
     addEventListener(type, handler) { cacheListeners[type] = handler; },
     swapCache() {},
   };
-  const location = { href:'', pathname:initial.pathname||'', replace(value) { this.href=value; } };
+  const location = { href:'', pathname:initial.pathname||'', search:initial.search||'', hash:initial.hash||'', replace(value) { this.href=value; } };
   const document = {
     getElementById: element,
     querySelector: element,
@@ -96,7 +97,7 @@ const firmwareRoutes = new Map([
   ['11.00', ['/1100/', '/1100/']],
   ['11.02', ['/1100/', '/1100/']],
   ['11.50', ['/modern/', '/modern/']],
-  ['12.00', ['/modern/', '/modern/']],
+  ['12.00', ['/1200/', '/ps4-host/1200/']],
   ['12.02', ['/modern/', '/modern/']],
   ['12.50', ['/modern/', '/modern/']],
   ['12.52', ['/modern/', '/modern/']],
@@ -206,3 +207,98 @@ env.cacheListeners.error();
 assert(env.element('start').disabled === true, '9.00 enabled without an installed offline cache');
 
 console.log('PS4 host safety state tests passed.');
+
+const twelveScript = inlineScripts('.gamezone-runtime/ps4-startup-1200/index.html')[0];
+const twelveGuard = inlineScripts('.gamezone-runtime/ps4-startup-1200/run_lapse.html')[0];
+function twelve(firmware='12.00', initial={}) {
+  const result = environment(`Mozilla/5.0 (PlayStation 4/${firmware}) AppleWebKit/605.1.15`, initial);
+  run(twelveScript,result,'twelve-index.js'); return result;
+}
+for (const firmware of ['9.00','11.00','12.02','12.000','12.50','13.00']) {
+  env = twelve(firmware); env.element('start').click(); env.element('start').click();
+  assert(env.element('start').disabled && !env.location.href && env.storage.size===0, `12.00 accepted wrong firmware ${firmware}`);
+}
+env = twelve();
+assert(!env.element('start').disabled && !env.location.href && env.storage.size===0,'12.00 started without a deliberate press');
+env.element('start').click();
+assert(!env.location.href && env.storage.size===0,'12.00 skipped risk acknowledgement');
+env.element('start').click(); env.element('start').click();
+assert(env.location.href==='run_lapse.html' && env.element('start').disabled,'12.00 failed protected single launch');
+const twelveTicket=env.storage.get('gamezone-1200-launch');
+env = environment('PlayStation 4/12.00',{storage:[['gamezone-1200-launch',twelveTicket]]});
+run(twelveGuard,env,'twelve-guard.js');
+assert(env.appended.length===1 && env.appended[0].src==='./launch.js' && env.storage.size===0,'12.00 valid ticket was not consumed for preflight');
+run(twelveGuard,env,'twelve-guard-reuse.js');
+assert(env.appended.length===1,'12.00 launch ticket could be reused');
+for (const delta of [-61000, 30000]) {
+  const invalid=JSON.stringify({build:'GZ12-20261001-1',firmware:'12.00',issuedAt:Date.now()+delta});
+  env=environment('PlayStation 4/12.00',{storage:[['gamezone-1200-launch',invalid]]});
+  run(twelveGuard,env,'twelve-expired-ticket.js');
+  assert(env.appended.length===0,'12.00 accepted expired or future ticket');
+}
+env=environment('PlayStation 4/12.00'); run(twelveGuard,env,'twelve-direct-url.js');
+assert(env.appended.length===0,'12.00 direct launch URL bypassed manual consent');
+for (const initial of [{search:'?payload=1'},{search:'?bug=poops'},{hash:'#run'}]) {
+  env=twelve('12.00',initial); env.element('start').click(); env.element('start').click();
+  assert(!env.location.href && env.element('start').disabled,'12.00 accepted URL override');
+  env=environment('PlayStation 4/12.00',{...initial,storage:[['gamezone-1200-launch',twelveTicket]]});
+  run(twelveGuard,env,'twelve-query-guard.js');
+  assert(env.appended.length===0,'12.00 internal page accepted URL override');
+}
+env=twelve('12.00',{cacheStatus:2});
+assert(env.element('start').disabled,'12.00 enabled while initial cache was checking');
+env.applicationCache.status=1; env.cacheListeners.error();
+assert(!env.element('start').disabled,'12.00 rejected installed offline cache when WAN check failed');
+env=twelve('12.00',{cacheStatus:0}); env.context.navigator.onLine=false; env.cacheListeners.error();
+assert(env.element('start').disabled,'12.00 assumed disconnected means cached');
+env=twelve('12.00',{cacheStatus:4});
+assert(env.element('start').disabled,'12.00 started mixed cache version without reloading');
+console.log('Dedicated 12.00 firmware, consent, ticket, override, and offline-state tests passed.');
+
+const twelveRoot=join(repo,'.gamezone-runtime/ps4-startup-1200');
+const digestCode=readFileSync(join(twelveRoot,'sha256.js'),'utf8').replace('export function sha256','function sha256');
+const digestEnv=environment('desktop');
+run(digestCode,digestEnv,'twelve-sha256.js');
+for (const size of [0,1,3,55,56,63,64,65,127,632,4096,290016]) {
+  const data=randomBytes(size);
+  const buffer=data.buffer.slice(data.byteOffset,data.byteOffset+data.byteLength);
+  assert(digestEnv.context.sha256(buffer)===createHash('sha256').update(data).digest('hex'),`12.00 SHA-256 failed at ${size} bytes`);
+}
+
+// Run only delivery preflight, replacing the final exploit import with a spy.
+// No kernel/userland exploit code executes in these desktop tests.
+const delivery=readFileSync(join(twelveRoot,'launch.js'),'utf8')
+  .replace("import { sha256 } from './sha256.js';",'')
+  .replace("await import('./chain_lapse.js');",'window.testLaunchCalls++;');
+async function preflight(alter) {
+  const result=environment('PlayStation 4/12.00');
+  result.context.sha256=digestEnv.context.sha256;
+  result.context.testLaunchCalls=0;
+  const metadata=JSON.parse(readFileSync(join(twelveRoot,'integrity.json'),'utf8'));
+  result.context.fetch=async function(url) {
+    const path=url.replace(/^\.\//,'');
+    if(path==='integrity.json') return {ok:true,json:async()=>metadata};
+    const data=readFileSync(join(twelveRoot,path));
+    const response={ok:true,buffer:data.buffer.slice(data.byteOffset,data.byteOffset+data.byteLength)};
+    if(alter) alter(path,response,metadata);
+    return {ok:response.ok,arrayBuffer:async()=>response.buffer};
+  };
+  await new vm.Script('(async function(){'+delivery+'})();',{filename:'twelve-preflight.js'}).runInContext(result.context);
+  return result;
+}
+env=await preflight();
+assert(env.context.testLaunchCalls===1 && env.context.gamezone1200Assets['payload.bin'].length===290016,'12.00 verified preflight did not hand off once');
+for (const file of ['payload.bin','patches/1200.bin','core.js','rpc_worker.js']) {
+  env=await preflight((path,response)=>{if(path===file)response.ok=false;});
+  assert(env.context.testLaunchCalls===0 && env.element('state').textContent.startsWith('STOP:'),`12.00 launched with missing ${file}`);
+  env=await preflight((path,response)=>{if(path===file)new Uint8Array(response.buffer)[0]^=1;});
+  assert(env.context.testLaunchCalls===0,`12.00 launched with same-size corrupted ${file}`);
+}
+env=await preflight((path,response,metadata)=>{
+  if(path==='payload.bin') {
+    new Uint8Array(response.buffer)[0]^=1;
+    metadata.files[path].sha256=createHash('sha256').update(new Uint8Array(response.buffer)).digest('hex');
+  }
+});
+assert(env.context.testLaunchCalls===0,'12.00 let metadata replace the compiled payload identity');
+console.log('12.00 SHA-256 vectors and missing/corrupt asset preflight tests passed; no exploit was executed.');

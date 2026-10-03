@@ -94,11 +94,13 @@ if (!rootIndex.includes('window.gamezonePayloadBuffer = binary') || !rootIndex.i
 if (!rootIndex.includes('window.gamezoneAioBuffer = aioBinary')) fail('9.00: AIO stability patch is not preloaded');
 if (!nineLapse.includes("runVerifiedPayload(window.gamezoneAioBuffer, 'AIO stability patch')")) fail('9.00: AIO stability patch is not executed before GoldHEN');
 if (!sixIndex.includes('button id="start" type="button" disabled')) fail('6.72: manual start button is not fail-closed');
-if (!sixIndex.includes('manifest="cache.appcache?v=20260930-1"')) fail('6.72: entry page does not use the current isolated offline cache');
+if (/<script[^>]+src=["']exploit-engine\.js/.test(sixIndex)) fail('6.72: engine can execute top-level setup before manual consent');
+if (!sixScript.includes('engine.src = "exploit-engine.js"')) fail('6.72: manual engine delivery is missing');
+if (!sixIndex.includes('manifest="cache.appcache?v=20261003-2-retro"')) fail('6.72: entry page does not use the current isolated offline cache');
 if (!sixScript.includes('firmware() === "6.72"') || sixScript.includes('setTimeout(jailbreak')) fail('6.72: exact firmware lock or manual start guarantee is missing');
 if (/GamerHack|Main Payloads|pl_FTP|load_goldhen/i.test(sixIndex)) fail('6.72: legacy multi-payload menu returned');
 if (elevenScript.includes('countdown(') || elevenScript.includes('checkbox.checked = true')) fail('11.00: automatic startup returned');
-if (!elevenScript.includes('cache.status === cache.IDLE || cache.status === cache.UPDATEREADY')) fail('11.00: installed offline cache is not recovered after a failed WAN refresh');
+if (!elevenScript.includes('if (cache.status === cache.IDLE)') || !elevenScript.includes('Offline cache loaded')) fail('11.00: installed offline cache is not recovered after a failed WAN refresh');
 if (!modernLapse.includes('gamezone-launch-ticket') || !modernPoops.includes('gamezone-launch-ticket')) fail('modern host: protected launch ticket is missing');
 
 console.log('All GameZone firmware hosts passed cache, origin, safety, and integrity checks.');

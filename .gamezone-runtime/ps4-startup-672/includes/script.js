@@ -8,15 +8,15 @@
 
   window.PLfile = "goldhen-2.4b18.12.bin";
   window.LoadedMSG = "GoldHEN v2.4b18.12 loaded. You may close the browser.";
-  document.getElementById("passCounter").textContent = localStorage.passcount || "0";
-  document.getElementById("failCounter").textContent = localStorage.failcount || "0";
+  try {
+    document.getElementById("passCounter").textContent = localStorage.passcount || "0";
+    document.getElementById("failCounter").textContent = localStorage.failcount || "0";
+  } catch (_) { /* Counters must not prevent offline startup. */ }
 
   function firmware() {
-    var match = /PlayStation 4[\\/ ](\d+)\.(\d+)/.exec(navigator.userAgent);
+    var match = /PlayStation 4[\\/ ](\d+)\.(\d+)(?:\D|$)/.exec(navigator.userAgent);
     if (!match) return null;
-    var minor = match[2].slice(0, 2);
-    if (minor.length < 2) minor = "0" + minor;
-    return parseInt(match[1], 10) + "." + minor;
+    return match[1] + "." + match[2];
   }
 
   function exactFirmware() {
@@ -24,6 +24,7 @@
   }
 
   function ready(message) {
+    if (started) return;
     if (!exactFirmware()) {
       button.disabled = true;
       status.textContent = "STOP: this starter requires exactly PS4 firmware 6.72.";
@@ -39,11 +40,18 @@
     started = true;
     button.disabled = true;
     status.textContent = "Starting GoldHEN. Wait for the console notification…";
-    try {
-      jailbreak();
-    } catch (error) {
-      status.textContent = "Startup failed. Cold-restart the PS4 before retrying.";
-    }
+    // This upstream engine contains top-level heap/exploit setup. Never load it
+    // while the entry page is only caching, checking firmware or awaiting consent.
+    var engine = document.createElement("script");
+    engine.src = "exploit-engine.js";
+    engine.onload = function () {
+      try { jailbreak(); }
+      catch (_) { status.textContent = "Startup failed. Cold-restart the PS4 before retrying."; }
+    };
+    engine.onerror = function () {
+      status.textContent = "Saved engine could not load. Nothing will retry automatically. Reconnect and reload before another attempt.";
+    };
+    document.body.appendChild(engine);
     // Never enable a second exploit attempt during the same page load.
   });
 
@@ -59,14 +67,11 @@
     status.textContent = "Offline storage is unavailable. Reload once with an internet connection.";
     return;
   }
-  if (!navigator.onLine || cache.status === cache.IDLE) {
-    ready();
-    return;
-  }
-  if (cache.status === cache.UPDATEREADY) {
+  function updateReady() {
+    cacheReady = false;
+    button.disabled = true;
     try { cache.swapCache(); } catch (_) {}
     status.textContent = "Offline update saved. Reload this page before starting GoldHEN.";
-    return;
   }
 
   status.textContent = "Saving the complete 6.72 starter for offline use…";
@@ -74,14 +79,19 @@
     if (event && event.total) status.textContent = "Saving for offline use: " + Math.round(event.loaded / event.total * 100) + "%";
   }, false);
   cache.addEventListener("cached", function () { ready(); }, false);
-  cache.addEventListener("noupdate", function () { ready(); }, false);
-  cache.addEventListener("updateready", function () {
-    try { cache.swapCache(); } catch (_) {}
-    button.disabled = true;
-    status.textContent = "Offline update saved. Reload this page before starting GoldHEN.";
-  }, false);
+  cache.addEventListener("noupdate", function () { if (cache.status === cache.IDLE) ready(); }, false);
+  cache.addEventListener("updateready", updateReady, false);
   cache.addEventListener("error", function () {
+    if (cache.status === cache.IDLE) { ready("Offline cache loaded. No internet is needed for startup."); return; }
+    if (cache.status === cache.UPDATEREADY) { updateReady(); return; }
+    cacheReady = false;
     button.disabled = true;
-    status.textContent = "Offline cache failed. Check the connection and reload; GoldHEN was not started.";
+    status.textContent = "Offline cache is not installed. Connect once, reload and wait for Offline ready; GoldHEN was not started.";
   }, false);
+  cache.addEventListener("obsolete", function () {
+    cacheReady = false; button.disabled = true;
+    status.textContent = "Offline package is obsolete. Reconnect and reload before starting.";
+  }, false);
+  if (cache.status === cache.IDLE) ready();
+  else if (cache.status === cache.UPDATEREADY) updateReady();
 })();

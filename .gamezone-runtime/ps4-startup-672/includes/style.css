@@ -5,8 +5,8 @@ body {
   align-items: center;
   justify-content: center;
   padding: 22px;
-  background-color: #03152f;
-  background-image: linear-gradient(rgba(1, 10, 28, .20), rgba(1, 10, 28, .36)), url("background.jpg");
+  background-color: #100c26;
+  background-image: linear-gradient(125deg, rgba(27, 9, 49, .86), rgba(10, 13, 37, .56)), url("background.jpg");
   background-position: center;
   background-repeat: no-repeat;
   background-size: cover;
@@ -18,23 +18,26 @@ body {
   width: 820px;
   max-width: 94%;
   padding: 32px;
-  border: 1px solid rgba(121, 198, 255, .35);
-  border-radius: 18px;
-  background: rgba(0, 0, 0, .52);
-  box-shadow: 0 24px 80px rgba(0, 0, 0, .55);
+  border: 1px solid #776098;
+  border-top: 4px solid #efa98d;
+  border-radius: 6px 32px 6px 32px;
+  background: linear-gradient(145deg, rgba(40, 21, 61, .94), rgba(12, 15, 36, .97));
+  box-shadow: 12px 12px 0 rgba(159, 99, 173, .16);
 }
-.logo { width: 110px; height: 110px; object-fit: contain; }
-.eyebrow { margin: 4px 0 8px; color: #71e7ff; font: bold 13px/1.2 monospace; letter-spacing: 2px; }
-h1 { margin: 8px 0 16px; font-size: 34px; }
+.logo { width: 86px; height: 86px; object-fit: contain; }
+.eyebrow { margin: 4px 0 8px; color: #efb89b; font: bold 13px/1.2 monospace; letter-spacing: 3px; }
+.edition { color: #f2decf; font: bold 86px/1 Arial, sans-serif; letter-spacing: -5px; margin: 12px 0; }
+.edition span { color: #b799d4; }
+h1 { margin: 8px 0 16px; font-size: 28px; }
 #firmware { margin: 0 0 18px; color: #93afd7; font-size: 15px; }
 .status { min-height: 54px; margin: 14px 0; color: #e6f2ff; font-weight: bold; }
 button {
   width: 100%;
   min-height: 66px;
   margin-top: 10px;
-  border: 2px solid #69d5ff;
-  border-radius: 11px;
-  background: #164c86;
+  border: 2px solid #edac92;
+  border-radius: 5px 16px 5px 16px;
+  background: #69446e;
   color: #fff;
   font-size: 22px;
   font-weight: bold;
@@ -42,3 +45,5 @@ button {
 button:disabled { opacity: .42; }
 .help { margin: 20px auto 0; max-width: 650px; color: #a8bdd8; font-size: 14px; line-height: 1.5; }
 .counters { margin-top: 15px; color: #7790ae; font: 12px/1.4 monospace; }
+button:focus { outline: 3px solid #fff3ce; outline-offset: 4px; }
+@media (max-height: 760px) { .card { padding: 22px; } .edition { font-size: 62px; margin: 8px 0; } .logo { width: 66px; height: 66px; } }

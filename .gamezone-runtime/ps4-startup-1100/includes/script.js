@@ -20,9 +20,9 @@
   ua.textContent = navigator.userAgent;
 
   function firmware() {
-    var match = /PlayStation 4[\\/ ](\d+)\.(\d+)/.exec(navigator.userAgent);
+    var match = /PlayStation 4[\\/ ](\d+)\.(\d+)(?:\D|$)/.exec(navigator.userAgent);
     if (!match) return null;
-    return parseInt(match[1], 10) + "." + match[2].slice(0, 2).padStart(2, "0");
+    return match[1] + "." + match[2];
   }
 
   function supported(value) {
@@ -30,6 +30,7 @@
   }
 
   function setReady(message) {
+    if (started) return;
     var fw = firmware();
     if (!supported(fw)) {
       button.disabled = true;
@@ -97,7 +98,7 @@
     if (event && event.total) status.textContent = "Saving for offline use: " + Math.round(event.loaded / event.total * 100) + "%";
   }, false);
   cache.addEventListener("cached", function () { setReady(); }, false);
-  cache.addEventListener("noupdate", function () { setReady(); }, false);
+  cache.addEventListener("noupdate", function () { if (cache.status === cache.IDLE) setReady(); }, false);
   cache.addEventListener("updateready", function () {
     try { cache.swapCache(); } catch (_) {}
     button.disabled = true;
@@ -109,15 +110,27 @@
     // The AppCache update check then emits ERROR even though the complete,
     // previously installed cache remains active. IDLE is that usable state;
     // UNCACHED/OBSOLETE means there is no safe offline package to launch.
-    if (cache.status === cache.IDLE || cache.status === cache.UPDATEREADY) {
-      if (cache.status === cache.UPDATEREADY) {
-        try { cache.swapCache(); } catch (_) {}
-      }
+    if (cache.status === cache.IDLE) {
       setReady("Offline cache loaded. Press Start GoldHEN when you are ready.");
       return;
     }
+    if (cache.status === cache.UPDATEREADY) {
+      try { cache.swapCache(); } catch (_) {}
+      cacheReady = false;
+      button.disabled = true;
+      maintenance.disabled = true;
+      status.textContent = "Offline update saved. Reload this page before starting GoldHEN.";
+      return;
+    }
+    cacheReady = false;
     button.disabled = true;
     maintenance.disabled = true;
     status.textContent = "Offline cache is not installed. Connect once, reload, and wait for Offline ready.";
+  }, false);
+  cache.addEventListener("obsolete", function () {
+    cacheReady = false;
+    button.disabled = true;
+    maintenance.disabled = true;
+    status.textContent = "Offline package is obsolete. Reconnect and reload before starting.";
   }, false);
 })();

@@ -18,7 +18,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 -->
 
 <!DOCTYPE html>
-<html lang="en" manifest="gamezone-v12.appcache?v=20261001-16-aio-sequenced">
+<html lang="en" manifest="gamezone-v12.appcache?v=20261003-17-cache-audit">
 <head>
   <meta charset="UTF-8">
   <title>GameZone GoldHEN for PS4 9.00</title>
@@ -114,7 +114,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
     <button id="start" type="button" disabled>Start GoldHEN</button>
     <button id="maintenance" class="secondary" type="button" disabled>Maintenance GoldHEN (no tracker AutoRun)</button>
     <pre id="console"></pre>
-    <p class="secondary">Offline package GZ9 v16</p>
+    <p class="secondary">Offline package GZ9 v17 · one manual attempt</p>
   </div>
 
   <script type="module">
@@ -123,12 +123,15 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
     const status = document.getElementById('status');
     const consoleOut = document.getElementById('console');
     let started = false;
+    button.disabled = true;
+    maintenance.disabled = true;
 
     function exactFirmware() {
       return /PlayStation 4[\\/ ]9\.00(?:\D|$)/.test(navigator.userAgent);
     }
 
     function ready(message) {
+      if (started) return;
       if (!exactFirmware()) {
         button.disabled = true;
         status.textContent = 'STOP: this starter is only for PS4 firmware 9.00.';
@@ -187,7 +190,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
       const cache = window.applicationCache;
       if (!cache) {
         status.textContent = 'Offline storage is unavailable. Reload with an internet connection.';
-      } else if (!navigator.onLine || cache.status === cache.IDLE) {
+      } else if (cache.status === cache.IDLE) {
         ready();
       } else if (cache.status === cache.UPDATEREADY) {
         try { cache.swapCache(); } catch (_) {}
@@ -198,7 +201,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
           if (event && event.total) status.textContent = 'Saving for offline use: ' + Math.round(event.loaded / event.total * 100) + '%';
         }, false);
         cache.addEventListener('cached', function () { ready('Offline ready. Press Start GoldHEN when you are ready.'); }, false);
-        cache.addEventListener('noupdate', function () { ready(); }, false);
+        cache.addEventListener('noupdate', function () { if (cache.status === cache.IDLE) ready(); }, false);
         cache.addEventListener('updateready', function () {
           try { cache.swapCache(); } catch (_) {}
           button.disabled = true;
@@ -212,16 +215,25 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
           // In that state the payload and exploit modules are safe to load
           // from the existing cache; only UNCACHED/OBSOLETE means no usable
           // offline installation exists.
-          if (cache.status === cache.IDLE || cache.status === cache.UPDATEREADY) {
-            if (cache.status === cache.UPDATEREADY) {
-              try { cache.swapCache(); } catch (_) {}
-            }
+          if (cache.status === cache.IDLE) {
             ready('Offline cache loaded. Press Start GoldHEN when you are ready.');
+            return;
+          }
+          if (cache.status === cache.UPDATEREADY) {
+            try { cache.swapCache(); } catch (_) {}
+            button.disabled = true;
+            maintenance.disabled = true;
+            status.textContent = 'Offline update saved. Reload this page before starting GoldHEN.';
             return;
           }
           button.disabled = true;
           maintenance.disabled = true;
           status.textContent = 'Offline cache is not installed. Connect once, reload, and wait for Offline ready.';
+        }, false);
+        cache.addEventListener('obsolete', function () {
+          button.disabled = true;
+          maintenance.disabled = true;
+          status.textContent = 'Offline package is obsolete. Reconnect and reload before starting.';
         }, false);
       }
     }

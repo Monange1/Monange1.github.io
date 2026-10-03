@@ -140,6 +140,8 @@ run(readFileSync(join(repo, '.gamezone-runtime/ps4-startup-672/includes/script.j
 assert(calls === 0 && env.element('start').disabled === false, '6.72 auto-started or stayed unavailable');
 env.element('start').click();
 env.element('start').click();
+assert(calls === 0 && env.appended.length === 1 && env.appended[0].src === 'exploit-engine.js', '6.72 engine was not loaded only after one manual press');
+env.appended[0].onload();
 assert(calls === 1 && env.context.PLfile === 'goldhen-2.4b18.12.bin', '6.72 did not enforce one exact payload attempt');
 
 calls = 0;
@@ -302,3 +304,44 @@ env=await preflight((path,response,metadata)=>{
 });
 assert(env.context.testLaunchCalls===0,'12.00 let metadata replace the compiled payload identity');
 console.log('12.00 SHA-256 vectors and missing/corrupt asset preflight tests passed; no exploit was executed.');
+
+// Cache status, not navigator.onLine, determines whether a saved package exists.
+const auditedHosts = [
+  ['6.72', readFileSync(join(repo,'.gamezone-runtime/ps4-startup-672/includes/script.js'),'utf8'), 'start'],
+  ['9.00', rootScript, 'start'],
+  ['11.00', readFileSync(join(repo,'.gamezone-runtime/ps4-startup-1100/includes/script.js'),'utf8'), 'jeilbrek'],
+  ['12.00', twelveScript, 'start'],
+];
+let cacheCases = 0;
+for (const [fw, code, buttonId] of auditedHosts) {
+  for (const online of [false,true]) {
+    for (const cacheStatus of [0,1,2,3,4,5]) {
+      const result=environment(`PlayStation 4/${fw}`,{cacheStatus});
+      result.context.navigator.onLine=online;
+      run(code,result,`cache-matrix-${fw}-${online}-${cacheStatus}`);
+      assert(result.element(buttonId).disabled === (cacheStatus!==1), `${fw}: wrong initial state ${cacheStatus}, online=${online}`);
+      assert(!result.location.href && result.storage.size===0, `${fw}: cache state started an exploit`);
+      cacheCases++;
+    }
+  }
+  for (const nextStatus of [0,1,3,4,5]) {
+    const result=environment(`PlayStation 4/${fw}`,{cacheStatus:2});
+    run(code,result,`cache-error-${fw}-${nextStatus}`);
+    result.applicationCache.status=nextStatus;
+    result.cacheListeners.error();
+    assert(result.element(buttonId).disabled === (nextStatus!==1), `${fw}: incorrect refresh-error recovery ${nextStatus}`);
+    cacheCases++;
+  }
+  const result=environment(`PlayStation 4/${fw}`,{cacheStatus:2});
+  run(code,result,`cache-late-event-${fw}`);
+  result.applicationCache.status=1; result.cacheListeners.cached();
+  result.context.jailbreak=()=>{}; result.context.doJb=()=>{};
+  // Block payload fetching, so even this start-button test cannot execute code.
+  result.context.fetch=()=>new Promise(()=>{});
+  result.element(buttonId).click();
+  if(fw==='12.00') result.element(buttonId).click();
+  result.cacheListeners.noupdate();
+  assert(result.element(buttonId).disabled, `${fw}: late cache event re-enabled a started attempt`);
+  cacheCases++;
+}
+console.log(`${cacheCases} cross-firmware offline state regressions passed; no exploit was executed.`);

@@ -113,8 +113,9 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
     <p id="status">Checking the complete offline starter…</p>
     <button id="start" type="button" disabled>Start GoldHEN</button>
     <button id="maintenance" class="secondary" type="button" disabled>Maintenance GoldHEN (no tracker AutoRun)</button>
+    <button id="update-cache" class="secondary" type="button" disabled>Update offline copy (internet needed only for updates)</button>
     <pre id="console"></pre>
-    <p class="secondary">Offline package GZ9 v17 · one manual attempt</p>
+    <p class="secondary">Offline package GZ9 v18 · saved launch needs no Wi-Fi · one manual attempt</p>
   </div>
 
   <script type="module">
@@ -122,6 +123,9 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
     const maintenance = document.getElementById('maintenance');
     const status = document.getElementById('status');
     const consoleOut = document.getElementById('console');
+    const updateButton = document.getElementById('update-cache');
+    const receiptKey = 'gamezone-900-installed-cache';
+    let updating = false;
     let started = false;
     button.disabled = true;
     maintenance.disabled = true;
@@ -139,6 +143,10 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
       }
       button.disabled = false;
       maintenance.disabled = false;
+      updateButton.disabled = false;
+      // A receipt only lets us try cancelling an optional refresh. AppCache
+      // must still confirm IDLE; storage alone never proves files are saved.
+      try { localStorage.setItem(receiptKey, 'installed'); } catch (_) {}
       status.textContent = message || 'Offline ready. Press Start GoldHEN when you are ready.';
     }
 
@@ -147,6 +155,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
       started = true;
       button.disabled = true;
       maintenance.disabled = true;
+      updateButton.disabled = true;
       const recovery = mode === 'maintenance';
       const payloadPath = recovery ? './goldhen-2.4b18-maintenance.bin' : './payload.bin';
       const payloadSize = recovery ? 260160 : 290016;
@@ -190,24 +199,49 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
       const cache = window.applicationCache;
       if (!cache) {
         status.textContent = 'Offline storage is unavailable. Reload with an internet connection.';
-      } else if (cache.status === cache.IDLE) {
-        ready();
-      } else if (cache.status === cache.UPDATEREADY) {
-        try { cache.swapCache(); } catch (_) {}
-        status.textContent = 'Offline update saved. Reload this page before starting GoldHEN.';
       } else {
-        status.textContent = 'Saving the complete starter for offline use…';
-        cache.addEventListener('progress', function (event) {
-          if (event && event.total) status.textContent = 'Saving for offline use: ' + Math.round(event.loaded / event.total * 100) + '%';
-        }, false);
-        cache.addEventListener('cached', function () { ready('Offline ready. Press Start GoldHEN when you are ready.'); }, false);
-        cache.addEventListener('noupdate', function () { if (cache.status === cache.IDLE) ready(); }, false);
-        cache.addEventListener('updateready', function () {
-          try { cache.swapCache(); } catch (_) {}
+        let savedBefore = false;
+        try { savedBefore = localStorage.getItem(receiptKey) === 'installed'; } catch (_) {}
+        function useSavedCopy() {
+          if (started || updating) return false;
+          if (savedBefore && (cache.status === cache.CHECKING || cache.status === cache.DOWNLOADING)) {
+            // WebKit checks the manifest on every visit, even on Wi-Fi with
+            // no WAN. Stop that optional refresh, not the installed cache.
+            try { cache.abort(); } catch (_) {}
+          }
+          if (cache.status !== cache.IDLE) return false;
+          savedBefore = true;
+          ready('Offline ready. No Wi-Fi or internet is needed. Press Start GoldHEN.');
+          return true;
+        }
+        function updateSaved() {
+          if (started) return;
+          try { localStorage.setItem(receiptKey, 'installed'); } catch (_) {}
           button.disabled = true;
           maintenance.disabled = true;
-          status.textContent = 'Offline update saved. Reload this page before starting GoldHEN.';
+          updateButton.disabled = true;
+          // Do not swap underneath an open page: its modules and binaries
+          // must come from the same cache version after navigation.
+          status.textContent = 'Offline update saved. Close and reopen this page to use it.';
+        }
+        updateButton.addEventListener('click', function () {
+          if (started || updating || cache.status !== cache.IDLE) return;
+          updating = true;
+          button.disabled = true;
+          maintenance.disabled = true;
+          updateButton.disabled = true;
+          status.textContent = 'Updating the offline copy. Internet is needed for this update only.';
+          try { cache.update(); } catch (_) { updating = false; useSavedCopy(); }
+        });
+        cache.addEventListener('checking', function () { useSavedCopy(); }, false);
+        cache.addEventListener('downloading', function () { useSavedCopy(); }, false);
+        cache.addEventListener('progress', function (event) {
+          if (started || (!updating && useSavedCopy())) return;
+          if (event && event.total) status.textContent = 'Saving for offline use: ' + Math.round(event.loaded / event.total * 100) + '%';
         }, false);
+        cache.addEventListener('cached', function () { updating = false; useSavedCopy(); }, false);
+        cache.addEventListener('noupdate', function () { updating = false; useSavedCopy(); }, false);
+        cache.addEventListener('updateready', updateSaved, false);
         cache.addEventListener('error', function () {
           // The PS4 browser may keep navigator.onLine=true after the WAN is
           // disconnected. Its manifest refresh then emits ERROR even though a
@@ -216,25 +250,28 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
           // from the existing cache; only UNCACHED/OBSOLETE means no usable
           // offline installation exists.
           if (cache.status === cache.IDLE) {
+            updating = false;
+            savedBefore = true;
             ready('Offline cache loaded. Press Start GoldHEN when you are ready.');
             return;
           }
           if (cache.status === cache.UPDATEREADY) {
-            try { cache.swapCache(); } catch (_) {}
-            button.disabled = true;
-            maintenance.disabled = true;
-            status.textContent = 'Offline update saved. Reload this page before starting GoldHEN.';
+            updateSaved();
             return;
           }
           button.disabled = true;
           maintenance.disabled = true;
+          updateButton.disabled = true;
           status.textContent = 'Offline cache is not installed. Connect once, reload, and wait for Offline ready.';
         }, false);
         cache.addEventListener('obsolete', function () {
           button.disabled = true;
           maintenance.disabled = true;
+          updateButton.disabled = true;
           status.textContent = 'Offline package is obsolete. Reconnect and reload before starting.';
         }, false);
+        if (cache.status === cache.UPDATEREADY) updateSaved();
+        else if (!useSavedCopy()) status.textContent = 'First offline save is not complete. Connect to internet once and wait for Offline ready.';
       }
     }
   </script>

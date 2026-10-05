@@ -38,6 +38,8 @@ function environment(userAgent, initial = {}) {
     status: initial.cacheStatus ?? 1,
     addEventListener(type, handler) { cacheListeners[type] = handler; },
     swapCache() {},
+    abort() { this.abortCalls = (this.abortCalls || 0) + 1; this.status = initial.abortStatus ?? 1; },
+    update() { this.updateCalls = (this.updateCalls || 0) + 1; this.status = 2; },
   };
   const location = { href:'', pathname:initial.pathname||'', search:initial.search||'', hash:initial.hash||'', replace(value) { this.href=value; } };
   const document = {
@@ -208,6 +210,35 @@ env.applicationCache.status = env.applicationCache.UNCACHED;
 env.cacheListeners.error();
 assert(env.element('start').disabled === true, '9.00 enabled without an installed offline cache');
 
+for (const cacheStatus of [2, 3]) {
+  for (const online of [true, false]) {
+    env = environment('PlayStation 4/9.00', { cacheStatus, storage:[['gamezone-900-installed-cache','installed']] });
+    env.context.navigator.onLine = online;
+    run(rootScript, env, 'nine-installed-no-wan.js');
+    assert(env.applicationCache.abortCalls === 1 && !env.element('start').disabled,
+      '9.00 saved launch waited for WAN during optional refresh');
+    assert(env.element('status').textContent.includes('No Wi-Fi'), '9.00 did not explain offline readiness');
+    assert(!env.context.fetches && !env.appended.length, 'offline readiness triggered exploit or network fetch');
+  }
+}
+env = environment('PlayStation 4/9.00', { cacheStatus:2, abortStatus:0, storage:[['gamezone-900-installed-cache','installed']] });
+run(rootScript, env, 'nine-deleted-cache-receipt.js');
+assert(env.element('start').disabled, '9.00 trusted stale storage after actual cache deletion');
+env = environment('PlayStation 4/9.00', { cacheStatus:3 });
+run(rootScript, env, 'nine-first-install.js');
+assert(!env.applicationCache.abortCalls && env.element('start').disabled, '9.00 aborted its first offline install');
+env.applicationCache.status = 1;
+env.cacheListeners.cached();
+assert(env.storage.get('gamezone-900-installed-cache') === 'installed' && !env.element('start').disabled,
+  '9.00 first complete save did not become offline-ready');
+env.element('update-cache').click();
+assert(env.applicationCache.updateCalls === 1 && env.element('start').disabled, 'explicit offline update did not wait for completion');
+env.cacheListeners.checking();
+assert(!env.applicationCache.abortCalls, 'explicit update was cancelled as an optional refresh');
+env.applicationCache.status = 1;
+env.cacheListeners.error();
+assert(!env.element('start').disabled, 'failed optional update prevented saved launch');
+
 console.log('PS4 host safety state tests passed.');
 
 const twelveScript = inlineScripts('.gamezone-runtime/ps4-startup-1200/index.html')[0];
@@ -320,7 +351,7 @@ for (const [fw, code, buttonId] of auditedHosts) {
       result.context.navigator.onLine=online;
       run(code,result,`cache-matrix-${fw}-${online}-${cacheStatus}`);
       assert(result.element(buttonId).disabled === (cacheStatus!==1), `${fw}: wrong initial state ${cacheStatus}, online=${online}`);
-      assert(!result.location.href && result.storage.size===0, `${fw}: cache state started an exploit`);
+      assert(!result.location.href && [...result.storage.keys()].every(key => key === 'gamezone-900-installed-cache'), `${fw}: cache state started an exploit`);
       cacheCases++;
     }
   }

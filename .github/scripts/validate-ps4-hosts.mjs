@@ -116,3 +116,19 @@ const twelveChain = readFileSync(join(repo,twelveRoot,'chain_lapse.js'),'utf8');
 if (!twelveChain.includes('maxAttempts: 1,') || twelveChain.includes('await fetch(') || twelveChain.includes('kpatched || params.get("payload")')) fail('12.00: unsafe retry/network/payload override returned');
 if (twelveIntegrity.qualification !== 'TEST_ONLY_NOT_HARDWARE_VERIFIED') fail('12.00: unverified build was relabeled as production');
 console.log('Dedicated 12.00 test package passed integrity and fail-closed checks.');
+
+// AppCache URLs are exact: core.js?v=10 is not the cached core.js. A second
+// URL also instantiates a second module, splitting the primitive's state.
+const twelveCached = new Set(cacheEntries(join(repo,twelveRoot,'cache.appcache')));
+for (const file of twelveCached) {
+  if (!file.endsWith('.js')) continue;
+  const code = readFileSync(join(repo,twelveRoot,file),'utf8');
+  const dependencies = [...code.matchAll(/(?:^[ \t]*import\s+(?:[\w*\s{},]+?\s+from\s*)?|\bimport\s*\(\s*|\bnew\s+Worker\(\s*)["']([^"']+)["']/gm)];
+  for (const [,specifier] of dependencies) {
+    const url = new URL(specifier,new URL(file,'https://offline.invalid/'));
+    if (url.origin !== 'https://offline.invalid' || url.search || url.hash || !twelveCached.has(url.pathname.slice(1))) {
+      fail(`12.00: ${file} requests an uncached or noncanonical dependency: ${specifier}`);
+    }
+  }
+}
+console.log('12.00 module and worker dependency URLs are canonical and fully cached.');

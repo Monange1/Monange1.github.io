@@ -1,5 +1,5 @@
 CACHE MANIFEST
-# GZ12-20261001-1 exact 12.00 test starter, shell 20261003-2-copper
+# GZ12-20261001-1 exact 12.00 test starter, shell 20261005-3-module-fix
 
 CACHE:
 index.html
@@ -20,4 +20,3 @@ LICENSE
 
 NETWORK:
 # No wildcard: required assets must come from the installed package offline.
-

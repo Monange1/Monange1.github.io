@@ -29,6 +29,7 @@ jobs:
         run: |
           node .github/scripts/validate-ps4-hosts.mjs
           node .github/scripts/test-ps4-host-safety.mjs
+          node --experimental-vm-modules .github/scripts/test-1200-offline-modules.mjs
       - name: Assemble firmware-specific hosts
         run: |
           mkdir -p public/672 public/900 public/1100 public/1200 public/start public/launch public/modern

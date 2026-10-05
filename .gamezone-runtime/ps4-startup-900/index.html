@@ -115,7 +115,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
     <button id="maintenance" class="secondary" type="button" disabled>Maintenance GoldHEN (no tracker AutoRun)</button>
     <button id="update-cache" class="secondary" type="button" disabled>Update offline copy (internet needed only for updates)</button>
     <pre id="console"></pre>
-    <p class="secondary">Offline package GZ9 v18 · saved launch needs no Wi-Fi · one manual attempt</p>
+    <p class="secondary">Offline package GZ9 v18.1 · saved launch needs no Wi-Fi · one manual attempt</p>
   </div>
 
   <script type="module">
@@ -205,6 +205,10 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
         try { savedBefore = localStorage.getItem(receiptKey) === 'installed'; } catch (_) {}
         function useSavedCopy() {
           if (started || updating) return false;
+          if (cache.status === cache.UNCACHED || cache.status === cache.OBSOLETE) {
+            savedBefore = false;
+            try { localStorage.removeItem(receiptKey); } catch (_) {}
+          }
           if (savedBefore && (cache.status === cache.CHECKING || cache.status === cache.DOWNLOADING)) {
             // WebKit checks the manifest on every visit, even on Wi-Fi with
             // no WAN. Stop that optional refresh, not the installed cache.

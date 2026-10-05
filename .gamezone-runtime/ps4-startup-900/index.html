@@ -124,7 +124,8 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
     const status = document.getElementById('status');
     const consoleOut = document.getElementById('console');
     const updateButton = document.getElementById('update-cache');
-    const receiptKey = 'gamezone-900-installed-cache';
+    // Root /, /900/ and the Hub's LAN host are separate AppCache groups.
+    const receiptKey = 'gamezone-900-installed-cache:' + location.pathname.replace(/index\.html$/, '');
     let updating = false;
     let started = false;
     button.disabled = true;
@@ -208,6 +209,12 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
             // WebKit checks the manifest on every visit, even on Wi-Fi with
             // no WAN. Stop that optional refresh, not the installed cache.
             try { cache.abort(); } catch (_) {}
+            if (cache.status === cache.UNCACHED || cache.status === cache.OBSOLETE) {
+              savedBefore = false;
+              try { localStorage.removeItem(receiptKey); } catch (_) {}
+              // Storage can outlive a deleted AppCache. Do not certify it or
+              // repeatedly abort a future first installation using that marker.
+            }
           }
           if (cache.status !== cache.IDLE) return false;
           savedBefore = true;

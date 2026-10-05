@@ -212,7 +212,7 @@ assert(env.element('start').disabled === true, '9.00 enabled without an installe
 
 for (const cacheStatus of [2, 3]) {
   for (const online of [true, false]) {
-    env = environment('PlayStation 4/9.00', { cacheStatus, storage:[['gamezone-900-installed-cache','installed']] });
+    env = environment('PlayStation 4/9.00', { cacheStatus, storage:[['gamezone-900-installed-cache:','installed']] });
     env.context.navigator.onLine = online;
     run(rootScript, env, 'nine-installed-no-wan.js');
     assert(env.applicationCache.abortCalls === 1 && !env.element('start').disabled,
@@ -221,15 +221,19 @@ for (const cacheStatus of [2, 3]) {
     assert(!env.context.fetches && !env.appended.length, 'offline readiness triggered exploit or network fetch');
   }
 }
-env = environment('PlayStation 4/9.00', { cacheStatus:2, abortStatus:0, storage:[['gamezone-900-installed-cache','installed']] });
+env = environment('PlayStation 4/9.00', { cacheStatus:2, abortStatus:0, storage:[['gamezone-900-installed-cache:','installed']] });
 run(rootScript, env, 'nine-deleted-cache-receipt.js');
 assert(env.element('start').disabled, '9.00 trusted stale storage after actual cache deletion');
+assert(!env.storage.has('gamezone-900-installed-cache:'), '9.00 retained a deleted cache marker');
+env = environment('PlayStation 4/9.00', { pathname:'/900/', cacheStatus:2, storage:[['gamezone-900-installed-cache:/','installed']] });
+run(rootScript, env, 'nine-separate-cache-groups.js');
+assert(env.element('start').disabled && !env.applicationCache.abortCalls, 'root cache receipt interrupted first /900/ installation');
 env = environment('PlayStation 4/9.00', { cacheStatus:3 });
 run(rootScript, env, 'nine-first-install.js');
 assert(!env.applicationCache.abortCalls && env.element('start').disabled, '9.00 aborted its first offline install');
 env.applicationCache.status = 1;
 env.cacheListeners.cached();
-assert(env.storage.get('gamezone-900-installed-cache') === 'installed' && !env.element('start').disabled,
+assert(env.storage.get('gamezone-900-installed-cache:') === 'installed' && !env.element('start').disabled,
   '9.00 first complete save did not become offline-ready');
 env.element('update-cache').click();
 assert(env.applicationCache.updateCalls === 1 && env.element('start').disabled, 'explicit offline update did not wait for completion');
@@ -351,7 +355,7 @@ for (const [fw, code, buttonId] of auditedHosts) {
       result.context.navigator.onLine=online;
       run(code,result,`cache-matrix-${fw}-${online}-${cacheStatus}`);
       assert(result.element(buttonId).disabled === (cacheStatus!==1), `${fw}: wrong initial state ${cacheStatus}, online=${online}`);
-      assert(!result.location.href && [...result.storage.keys()].every(key => key === 'gamezone-900-installed-cache'), `${fw}: cache state started an exploit`);
+      assert(!result.location.href && [...result.storage.keys()].every(key => key.startsWith('gamezone-900-installed-cache:')), `${fw}: cache state started an exploit`);
       cacheCases++;
     }
   }
